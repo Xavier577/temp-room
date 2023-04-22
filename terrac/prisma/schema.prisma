@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  pk           Int               @id @default(autoincrement())
+  id           String            @unique @default(uuid())
+  username     String            @unique
+  email        String            @unique
+  password     String
+  messages     Message[]
+  roomsCreated RoomCreator[]
+  roomsJoined  RoomParticipant[]
+
+  @@unique([pk, id])
+  @@map("user")
+}
+
+model Message {
+  pk          Int          @id @default(autoincrement())
+  id          String       @unique @default(uuid())
+  room        Room         @relation(fields: [roomPk], references: [pk])
+  roomPk      Int          @map("room_pk")
+  roomId      String       @map("room_id")
+  content     String
+  messageType MessageType? @default(TEXT)
+  sentAt      DateTime?    @default(now()) @map("sent_at")
+  sender      User         @relation(fields: [senderPk, senderId], references: [pk, id])
+  senderPk    Int          @map("sender_pk")
+  senderId    String       @map("sender_id")
+
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+}
+
+model RoomCreator {
+  pk        Int    @id @default(autoincrement())
+  id        String @unique @default(uuid())
+  room      Room   @relation(fields: [roomPk, roomId], references: [pk, id])
+  roomPk    Int
+  roomId    String
+  creator   User   @relation(fields: [creatorId, creatorPk], references: [pk, id])
+  creatorId Int    @map("userPk")
+  creatorPk String @map("userId")
+
+  @@map("room_creators")
+}
+
+model RoomParticipant {
+  pk            Int       @id @default(autoincrement())
+  id            String    @unique @default(uuid())
+  room          Room      @relation(fields: [roomPk, roomId], references: [pk, id])
+  roomPk        Int
+  roomId        String
+  participant   User      @relation(fields: [participantPk, participantId], references: [pk, id])
+  participantPk Int       @map("userPk")
+  participantId String    @map("userId")
+  joinedAt      DateTime? @default(now())
+
+  @@map("room_participants")
+}
+
+model Room {
+  pk               Int               @id @default(autoincrement())
+  id               String            @unique @default(uuid())
+  roomCreator      RoomCreator[]
+  roomParticipants RoomParticipant[]
+  roomName         String
+  createdAt        DateTime?         @default(now())
+  updateAt         DateTime?         @default(now())
+  messages         Message[]
+
+  @@unique([pk, id])
+  @@map("rooms")
+}
