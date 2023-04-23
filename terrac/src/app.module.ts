@@ -11,10 +11,10 @@ import { ResponseLoggerInterceptor } from '@common/interceptors/response-logger.
 import { ErrorInterceptor } from '@common/interceptors/error.interceptor';
 import { NestModule } from '@nestjs/common';
 import { RequestLogger } from '@common/middlewares/request-logger.middleware';
-import { AuthenticationModule } from './api/authentication/authentication.module';
-import { UsersModule } from './api/users/users.module';
-import { RoomsModule } from './api/rooms/rooms.module';
-import { ChatModule } from './api/chat/chat.module';
+import { AuthenticationModule } from '@api/authentication/authentication.module';
+import { UsersModule } from '@api/users/users.module';
+import { RoomsModule } from '@api/rooms/rooms.module';
+import { ChatModule } from '@api/chat/chat.module';
 
 AdminJS.registerAdapter({ Database, Resource });
 

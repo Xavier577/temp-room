@@ -31,7 +31,7 @@ model Message {
   roomPk      Int          @map("room_pk")
   roomId      String       @map("room_id")
   content     String
-  messageType MessageType? @default(TEXT)
+  messageType MessageType? @default(TEXT) @map("message_type")
   sentAt      DateTime?    @default(now()) @map("sent_at")
   sender      User         @relation(fields: [senderPk, senderId], references: [pk, id])
   senderPk    Int          @map("sender_pk")
@@ -48,8 +48,8 @@ model RoomCreator {
   pk        Int    @id @default(autoincrement())
   id        String @unique @default(uuid())
   room      Room   @relation(fields: [roomPk, roomId], references: [pk, id])
-  roomPk    Int
-  roomId    String
+  roomPk    Int    @map("room_pk")
+  roomId    String @map("room_id")
   creator   User   @relation(fields: [creatorId, creatorPk], references: [pk, id])
   creatorId Int    @map("userPk")
   creatorPk String @map("userId")
@@ -61,12 +61,12 @@ model RoomParticipant {
   pk            Int       @id @default(autoincrement())
   id            String    @unique @default(uuid())
   room          Room      @relation(fields: [roomPk, roomId], references: [pk, id])
-  roomPk        Int
-  roomId        String
+  roomPk        Int       @map("room_pk")
+  roomId        String    @map("room_id")
   participant   User      @relation(fields: [participantPk, participantId], references: [pk, id])
-  participantPk Int       @map("userPk")
-  participantId String    @map("userId")
-  joinedAt      DateTime? @default(now())
+  participantPk Int       @map("participant_pk")
+  participantId String    @map("participant_id")
+  joinedAt      DateTime? @default(now()) @map("joined_at")
 
   @@map("room_participants")
 }
@@ -76,9 +76,9 @@ model Room {
   id               String            @unique @default(uuid())
   roomCreator      RoomCreator[]
   roomParticipants RoomParticipant[]
-  roomName         String
-  createdAt        DateTime?         @default(now())
-  updateAt         DateTime?         @default(now())
+  roomCode         String            @map("room_code")
+  createdAt        DateTime?         @default(now()) @map("created_at")
+  updateAt         DateTime?         @default(now()) @map("update_at")
   messages         Message[]
 
   @@unique([pk, id])
