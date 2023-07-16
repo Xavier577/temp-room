@@ -1,13 +1,16 @@
 import express from 'express';
 import { v1Router } from './routes';
 import http from 'http';
-import Logger from './config/logger';
+import Logger from './logger';
 import Env from './shared/utils/env';
 import { AppEnv } from './shared/enums';
 import cors from 'cors';
+import { Mongo } from './mongo';
 
 async function main() {
   const app = express();
+
+  await Mongo.connect({ url: Env.get<string>('MONGO_DATABASE_URL') });
 
   app.use(cors({ origin: '*' })); // allow any origin for now
   app.use(express.json());

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import Logger from '../../config/logger';
+import Logger from '../../logger';
 import { BadException } from '../errors';
 export const RequestBodyValidatorMiddleware =
   <T>(validationSchema: Joi.ObjectSchema<T>) =>
