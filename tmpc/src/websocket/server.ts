@@ -6,6 +6,7 @@ import { WsErrorCode, WsException } from '../shared/errors/websocket';
 import Logger from '../logger';
 import * as https from 'https';
 import roomWebsocketHandler from '../rooms/websocket.handler';
+import { WsBoardCastMiddleware } from './middlewares/ws-board-cast.middleware';
 
 export function websocketServer(server: http.Server | https.Server) {
   const wsServer = new WebSocketServer({ noServer: true });
@@ -13,16 +14,41 @@ export function websocketServer(server: http.Server | https.Server) {
   const logger = new Logger(websocketServer.name);
 
   wsServer.on('connection', (ws) => {
-    ws.on('message', (message) => {
+    logger.log('CONNECTION_ESTABLISHED');
+
+    ws.on('message', (message, isBinary) => {
+      logger.log('RECEIVED_MESSAGE');
+
+      logger.log(message.toString());
       try {
         const parsedData = JSON.parse(message.toString());
 
         const payload = new WsPayload(parsedData);
 
+        const broadcastFn = WsBoardCastMiddleware(ws, wsServer, isBinary);
+
+        (ws as any).userId = payload.data?.userId;
+
         switch (payload.event) {
           case 'join_room':
             // join room
-            roomWebsocketHandler.joinRoom(payload, ws);
+            roomWebsocketHandler.joinRoom(payload, ws, broadcastFn);
+
+            // {
+            //   const msg = new WsMessage<any>({
+            //     data: {
+            //       message: `you have joined room ${payload.data?.roomId}`,
+            //     },
+            //     event: payload.event,
+            //   }).stringify();
+            //
+            //   wsServer.clients.forEach((client) => {
+            //     if (client != ws && client.readyState === WebSocket.OPEN) {
+            //       client.send(msg, { binary: isBinary });
+            //     }
+            //   });
+            // }
+
             break;
           case 'chat':
             //chat
@@ -59,6 +85,11 @@ export function websocketServer(server: http.Server | https.Server) {
           error: { code: e.code, message: e.message },
         }).stringify();
         ws.send(data);
+
+        if (e.code == WsErrorCode.INTERNAL_SERVER_ERROR) {
+          // close connection if exception is internal server error
+          ws.close();
+        }
         return;
       }
 
@@ -71,10 +102,18 @@ export function websocketServer(server: http.Server | https.Server) {
       }).stringify();
 
       ws.send(data);
+
+      ws.close();
     });
   });
 
   server.on('upgrade', function upgrade(request, socket, head) {
+    logger.log(JSON.stringify(request.headers));
+
+    logger.log('ESTABLISHING_CONNECTION');
+
+    // validate connections before accepting
+
     // const origin = request && request.headers && request.headers.origin;
     // const corsRegex = /^https?:\/\/(.*\.?)abc\.com(:\d+)?\/$/g
 

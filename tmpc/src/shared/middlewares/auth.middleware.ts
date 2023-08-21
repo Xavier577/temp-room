@@ -6,7 +6,9 @@ export default function AuthMiddleware(
   _res: Response,
   next: NextFunction,
 ) {
-  const sessionUser = (req?.session as any)['account'] as { id: string };
+  const sessionUser = ((req as any).session as any)['account'] as {
+    id: string;
+  };
 
   if (sessionUser == null) {
     throw new UnAuthorizedException();

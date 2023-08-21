@@ -10,6 +10,7 @@ export class RoomController {
     const room = this.roomService.create({
       name: data.name,
       description: data.description,
+      hostId: data.hostId,
     });
 
     res.status(200).json(room);

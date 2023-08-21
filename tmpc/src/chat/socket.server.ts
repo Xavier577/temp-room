@@ -67,7 +67,6 @@ chatSocketServer.on('connection', (socket, req) => {
       socket.send('received');
     } catch (e) {
       socket.emit('error', e);
-      throw e;
     }
   });
 });
