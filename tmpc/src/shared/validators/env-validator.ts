@@ -6,6 +6,7 @@ export interface EnvProps {
   NODE_ENV: string;
   MONGO_DATABASE_URL: string;
   SWAGGER_ROUTE: string;
+  JWT_SECRET: string;
 }
 
 export const envValidatorSchema = Joi.object<EnvProps>({
@@ -17,4 +18,6 @@ export const envValidatorSchema = Joi.object<EnvProps>({
   MONGO_DATABASE_URL: Joi.string().required(),
 
   SWAGGER_ROUTE: Joi.string().default('/api/docs'),
+
+  JWT_SECRET: Joi.string().required(),
 }).unknown(true);

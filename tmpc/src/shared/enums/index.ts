@@ -6,6 +6,6 @@ export enum AppEnv {
 }
 
 export enum LOGIN_MODE {
+  USERNAME = 'username',
   EMAIL = 'email',
-  PHONE = 'phone',
 }

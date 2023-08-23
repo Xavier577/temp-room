@@ -4,7 +4,13 @@ export type ExpressController = (
   req: Request,
   res: Response,
   next?: NextFunction,
-) => any;
+) => void | Promise<void>;
+
+export type ExpressMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => void | Promise<void>;
 
 export type SessionAccount = {
   id: string;

@@ -25,7 +25,7 @@ export class RoomController {
   public getRoomById = (req: Request, res: Response) => {
     const id = req.params.id;
 
-    const room = this.roomService.get(id);
+    const room = this.roomService.getRoomById(id);
 
     res.status(200).json(room);
   };

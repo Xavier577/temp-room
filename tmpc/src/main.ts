@@ -6,10 +6,14 @@ import Env from './shared/utils/env';
 import { AppEnv } from './shared/enums';
 import cors from 'cors';
 import { Mongo } from './mongo';
-import { websocketServer } from './websocket/server';
+// import { websocketServer } from './websocket/server';
+import { envValidatorSchema } from './shared/validators/env-validator';
+import { GlobalErrorCatcherMiddleware } from './shared/middlewares/global-error-catcher.middleware';
 
 async function main() {
   const app = express();
+
+  await Env.validateEnv(envValidatorSchema);
 
   await Mongo.connect({ url: Env.get<string>('MONGO_DATABASE_URL') });
 
@@ -19,6 +23,8 @@ async function main() {
 
   app.use('/api/v1', v1Router);
 
+  app.use(GlobalErrorCatcherMiddleware);
+
   const server = http.createServer(app);
   const PORT = Env.get<string>('PORT');
 
@@ -27,7 +33,7 @@ async function main() {
       console.log(`listening on http://localhost:${PORT}`);
     });
 
-  websocketServer(server);
+  // websocketServer(server);
 
   server.listen(PORT);
 }

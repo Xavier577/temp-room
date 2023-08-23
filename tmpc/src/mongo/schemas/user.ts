@@ -3,26 +3,32 @@ import mongoose from 'mongoose';
 export interface User {
   firstName: string;
   lastName: string;
+  username: string;
   email: string;
+  password: string;
   profileImg: string;
 }
 
-const userSchema = new mongoose.Schema<User>(
+export const userSchema = new mongoose.Schema<User>(
   {
-    firstName: {
-      type: String,
-    },
+    firstName: String,
     lastName: String,
     email: {
       type: String,
       required: true,
       unique: true,
     },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: String,
     profileImg: String,
   },
   { timestamps: true },
 );
 
-const UserModel = mongoose.model('users', userSchema);
+const UserModel = mongoose.model('User', userSchema);
 
 export default UserModel;

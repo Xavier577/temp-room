@@ -1,80 +1,22 @@
+import * as https from 'https';
 import http from 'http';
 import { WebSocketServer } from 'ws';
 import { WsPayload } from './dtos/ws-payload';
 import { WsMessage } from './dtos/ws-message';
 import { WsErrorCode, WsException } from '../shared/errors/websocket';
+import { WsBroadcastMiddleware } from './middlewares/ws-broadcast.middleware';
 import Logger from '../logger';
-import * as https from 'https';
 import roomWebsocketHandler from '../rooms/websocket.handler';
-import { WsBoardCastMiddleware } from './middlewares/ws-board-cast.middleware';
+import chatWebsocketHandler from '../chat/websocket.handler';
+import { WsAuthMiddleware } from './middlewares/ws-auth.middleware';
 
 export function websocketServer(server: http.Server | https.Server) {
   const wsServer = new WebSocketServer({ noServer: true });
 
   const logger = new Logger(websocketServer.name);
 
-  wsServer.on('connection', (ws) => {
+  wsServer.on('connection', (ws, request) => {
     logger.log('CONNECTION_ESTABLISHED');
-
-    ws.on('message', (message, isBinary) => {
-      logger.log('RECEIVED_MESSAGE');
-
-      logger.log(message.toString());
-      try {
-        const parsedData = JSON.parse(message.toString());
-
-        const payload = new WsPayload(parsedData);
-
-        const broadcastFn = WsBoardCastMiddleware(ws, wsServer, isBinary);
-
-        (ws as any).userId = payload.data?.userId;
-
-        switch (payload.event) {
-          case 'join_room':
-            // join room
-            roomWebsocketHandler.joinRoom(payload, ws, broadcastFn);
-
-            // {
-            //   const msg = new WsMessage<any>({
-            //     data: {
-            //       message: `you have joined room ${payload.data?.roomId}`,
-            //     },
-            //     event: payload.event,
-            //   }).stringify();
-            //
-            //   wsServer.clients.forEach((client) => {
-            //     if (client != ws && client.readyState === WebSocket.OPEN) {
-            //       client.send(msg, { binary: isBinary });
-            //     }
-            //   });
-            // }
-
-            break;
-          case 'chat':
-            //chat
-            break;
-          default:
-            const data = new WsMessage({
-              status: 'error',
-              error: {
-                code: WsErrorCode.BAD_USER_INPUT,
-                message: 'INVALID_EVENT_TYPE',
-              },
-            }).stringify();
-
-            ws.send(data);
-        }
-      } catch (e) {
-        if (e instanceof SyntaxError) {
-          ws.emit(
-            'error',
-            new WsException(WsErrorCode.BAD_USER_INPUT, e.message),
-          );
-          return;
-        }
-        ws.emit('error', e);
-      }
-    });
 
     ws.on('error', (e) => {
       logger.error(e);
@@ -105,12 +47,73 @@ export function websocketServer(server: http.Server | https.Server) {
 
       ws.close();
     });
+
+    ws.on('close', () => {
+      logger.log('CONNECTION_CLOSED');
+    });
+
+    logger.log('AUTHENTICATING_CONNECTION');
+
+    WsAuthMiddleware(ws, request).catch((e) => {
+      ws.emit('error', e);
+    });
+
+    ws.on('message', (message, isBinary) => {
+      logger.log('RECEIVED_MESSAGE');
+
+      logger.log(message.toString());
+
+      try {
+        const parsedData = JSON.parse(message.toString());
+
+        const payload = new WsPayload(parsedData);
+
+        const broadcastFn = WsBroadcastMiddleware(ws, wsServer, isBinary);
+
+        switch (payload.event) {
+          case 'join_room':
+            roomWebsocketHandler
+              .joinRoom(payload, ws, broadcastFn)
+              .catch((e) => {
+                ws.emit('error', e);
+              });
+            break;
+          case 'chat':
+            chatWebsocketHandler
+              .sendMessage(payload, ws, broadcastFn)
+              .catch((e) => ws.emit('error', e));
+            break;
+          case 'leave':
+            // leave room
+            break;
+          default:
+            const data = new WsMessage({
+              status: 'error',
+              error: {
+                code: WsErrorCode.BAD_USER_INPUT,
+                message: 'INVALID_EVENT_TYPE',
+              },
+            }).stringify();
+
+            ws.send(data);
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          ws.emit(
+            'error',
+            new WsException(WsErrorCode.BAD_USER_INPUT, e.message),
+          );
+          return;
+        }
+        ws.emit('error', e);
+      }
+    });
   });
 
   server.on('upgrade', function upgrade(request, socket, head) {
-    logger.log(JSON.stringify(request.headers));
-
     logger.log('ESTABLISHING_CONNECTION');
+
+    logger.log(JSON.stringify(request.headers));
 
     // validate connections before accepting
 
@@ -119,7 +122,7 @@ export function websocketServer(server: http.Server | https.Server) {
 
     const { pathname } = new URL(
       String(request.url),
-      `https://${request.headers.host}`,
+      `http://${request.headers.host}`,
     );
 
     switch (pathname) {

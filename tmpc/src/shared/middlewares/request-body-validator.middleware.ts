@@ -11,7 +11,7 @@ export const RequestBodyValidatorMiddleware =
 
     if (validationResult.error != null) {
       logger.log(validationResult.error);
-      throw new BadException(validationResult.error.message);
+      throw new BadException(JSON.stringify(validationResult.error.details));
     }
 
     next();
