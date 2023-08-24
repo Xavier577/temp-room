@@ -4,17 +4,16 @@ import { WsPayload } from '../websocket/dtos/ws-payload';
 import { WsMessage } from '../websocket/dtos/ws-message';
 import { WsErrorCode } from '../shared/errors/websocket';
 import { WsBroadcastFn } from '../websocket/middlewares/ws-broadcast.middleware';
-import userService, { UserService } from '../users/services/user.service';
 import Logger from '../logger';
 import chatService, { ChatService } from '../chat/services/chat.service';
 import { Message } from '../chat/entities/message.entity';
+import { User } from '../users/entities/user.entity';
 
 export class RoomWebsocketHandler {
   private readonly logger = new Logger(RoomWebsocketHandler.name);
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
-    private readonly userService: UserService,
   ) {}
 
   public joinRoom = async (
@@ -40,14 +39,16 @@ export class RoomWebsocketHandler {
       return;
     }
 
-    const user = await this.userService.getUserById((ws as any).user?.id);
+    const user = <User>(ws as any).user;
 
     if (user == null) {
+      this.logger.log('USER_NOT_FOUND');
+
       const msg = new WsMessage({
         status: 'error',
         error: {
-          code: WsErrorCode.BAD_USER_INPUT,
-          message: 'INVALID_USER_ID',
+          code: WsErrorCode.INTERNAL_SERVER_ERROR,
+          message: 'SOMETHING_WENT_WRONG',
         },
       }).stringify();
 
@@ -127,10 +128,6 @@ export class RoomWebsocketHandler {
   };
 }
 
-const roomWebsocketHandler = new RoomWebsocketHandler(
-  chatService,
-  roomService,
-  userService,
-);
+const roomWebsocketHandler = new RoomWebsocketHandler(chatService, roomService);
 
 export default roomWebsocketHandler;

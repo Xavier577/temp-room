@@ -6,9 +6,10 @@ import Env from './shared/utils/env';
 import { AppEnv } from './shared/enums';
 import cors from 'cors';
 import { Mongo } from './mongo';
-// import { websocketServer } from './websocket/server';
 import { envValidatorSchema } from './shared/validators/env-validator';
 import { GlobalErrorCatcherMiddleware } from './shared/middlewares/global-error-catcher.middleware';
+import { websocketServer } from './websocket/server';
+import RequestLoggerMiddleware from './shared/middlewares/request-logger.middleware';
 
 async function main() {
   const app = express();
@@ -20,6 +21,8 @@ async function main() {
   app.use(cors({ origin: 'http://localhost:2000' })); // allow any origin for now
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  app.use(RequestLoggerMiddleware);
 
   app.use('/api/v1', v1Router);
 
@@ -33,7 +36,7 @@ async function main() {
       console.log(`listening on http://localhost:${PORT}`);
     });
 
-  // websocketServer(server);
+  websocketServer(server);
 
   server.listen(PORT);
 }

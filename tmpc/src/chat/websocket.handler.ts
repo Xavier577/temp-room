@@ -2,12 +2,12 @@ import WebSocket from 'ws';
 import { WsPayload } from '../websocket/dtos/ws-payload';
 import { WsBroadcastFn } from '../websocket/middlewares/ws-broadcast.middleware';
 import roomService, { RoomService } from '../rooms/services/room.service';
-import userService, { UserService } from '../users/services/user.service';
 import { WsMessage } from '../websocket/dtos/ws-message';
 import { WsErrorCode } from '../shared/errors/websocket';
 import Logger from '../logger';
 import chatService, { ChatService } from './services/chat.service';
 import { Message } from './entities/message.entity';
+import { User } from '../users/entities/user.entity';
 
 export class ChatWebsocketHandler {
   private readonly logger = new Logger(ChatWebsocketHandler.name);
@@ -15,7 +15,6 @@ export class ChatWebsocketHandler {
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
-    private readonly userService: UserService,
   ) {}
   public sendMessage = async (
     payload: WsPayload,
@@ -42,7 +41,7 @@ export class ChatWebsocketHandler {
       return;
     }
 
-    const user = await this.userService.getUserById((ws as any)?.user.id);
+    const user = <User>(ws as any).user;
 
     if (user == null) {
       this.logger.log('USER_NOT_FOUND');
@@ -50,8 +49,8 @@ export class ChatWebsocketHandler {
       const msg = new WsMessage({
         status: 'error',
         error: {
-          code: WsErrorCode.BAD_USER_INPUT,
-          message: 'INVALID_USER_ID',
+          code: WsErrorCode.INTERNAL_SERVER_ERROR,
+          message: 'SOMETHING_WENT_WRONG',
         },
       }).stringify();
 
@@ -106,7 +105,7 @@ export class ChatWebsocketHandler {
     broadcast(msg, {
       includeSelf: false,
       shouldBroadcastOnlyIf: (client) => {
-        const userId = <string>(client as any).userId;
+        const userId = <string>(client as any).user?.id;
         return room.participants.some((r) => r.id === userId);
       },
       afterBroadcast: async () => {
@@ -116,10 +115,6 @@ export class ChatWebsocketHandler {
   };
 }
 
-const chatWebsocketHandler = new ChatWebsocketHandler(
-  chatService,
-  roomService,
-  userService,
-);
+const chatWebsocketHandler = new ChatWebsocketHandler(chatService, roomService);
 
 export default chatWebsocketHandler;

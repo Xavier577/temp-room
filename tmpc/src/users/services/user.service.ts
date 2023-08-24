@@ -6,15 +6,17 @@ import userRepository, {
 } from '../repositories/user.respository';
 
 export interface UserService {
+  createUser(data: CreateUserData): Promise<User>;
   getUserById(id: string): Promise<User>;
   getUserByUsername(username: string): Promise<User>;
   getUserByEmail(email: string): Promise<User>;
+  update(id: string, data: UpdateUserData): Promise<User>;
 }
 
 export class UserServiceImpl implements UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  public async createUser(data: CreateUserData): Promise<User> {
+  async createUser(data: CreateUserData): Promise<User> {
     return this.userRepository.create(data);
   }
 
@@ -30,7 +32,7 @@ export class UserServiceImpl implements UserService {
     return this.userRepository.findByEmail(email);
   }
 
-  public async update(id: string, data: UpdateUserData): Promise<User> {
+  async update(id: string, data: UpdateUserData): Promise<User> {
     return this.userRepository.update(id, data);
   }
 }

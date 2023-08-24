@@ -1,31 +1,35 @@
 import roomService, { RoomService } from './services/room.service';
 import { Request, Response } from 'express';
+import { User } from '../users/entities/user.entity';
+import { CreateRoomDto } from './dtos/create-room.dto';
 
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
-  public createRoom = (req: Request, res: Response) => {
-    const data = req.body;
+  public createRoom = async (req: Request, res: Response) => {
+    const payload = new CreateRoomDto(req.body);
 
-    const room = this.roomService.create({
-      name: data.name,
-      description: data.description,
-      hostId: data.hostId,
+    const user = <User>(req as any).user;
+
+    const room = await this.roomService.create({
+      name: payload.name,
+      description: payload.description,
+      hostId: user.id,
     });
 
     res.status(200).json(room);
   };
 
-  public getAllRooms = (_req: Request, res: Response) => {
-    const rooms = this.roomService.getAllRooms();
+  public getAllRooms = async (_req: Request, res: Response) => {
+    const rooms = await this.roomService.getAllRooms();
 
     res.status(200).json(rooms);
   };
 
-  public getRoomById = (req: Request, res: Response) => {
+  public getRoomById = async (req: Request, res: Response) => {
     const id = req.params.id;
 
-    const room = this.roomService.getRoomById(id);
+    const room = await this.roomService.getRoomById(id);
 
     res.status(200).json(room);
   };

@@ -6,27 +6,26 @@ import { CreateNullClass } from '../../shared/utils/null-class';
 export interface CreateRoomData
   extends Partial<Omit<Room, 'id' | 'participants'>> {
   name: string;
-  description: string;
   hostId: string;
 }
 
-export type UpdateRoomData = Partial<
-  Pick<Room, 'name' | 'description' | 'participants'>
->;
+export interface UpdateRoomData
+  extends Partial<Pick<Room, 'name' | 'description'>> {}
 
 export interface RoomRepository {
-  create(data: CreateRoomData): Promise<Room>;
+  create(data: CreateRoomData): Promise<Omit<Room, 'participants'>>;
   findAll(): Promise<Room[]>;
   findById(id: string): Promise<Room>;
   findByHostId(hostId: string): Promise<Room>;
   update(id: string, data: UpdateRoomData): Promise<Room>;
+  addParticipant(id: string, participant: { id: string }[]): Promise<Room>;
 }
 
 export class RoomRepositoryImpl implements RoomRepository {
   constructor(private readonly roomModel: mongoose.Model<MRoom>) {}
 
   public async findAll(): Promise<Room[]> {
-    const rooms = await this.roomModel.find();
+    const rooms = await this.roomModel.find().populate('participants');
 
     return rooms.map(
       (room) =>
@@ -36,13 +35,16 @@ export class RoomRepositoryImpl implements RoomRepository {
           description: room.description,
           hostId: room.host.toString(),
           participants: room.participants?.map?.((p) => ({
-            id: p.toString(),
+            id: <string>(p as any)._id?.toString?.(),
+            username: <string>(p as any)?.username,
           })),
         }),
     );
   }
 
-  public async create(data: CreateRoomData): Promise<Room> {
+  public async create(
+    data: CreateRoomData,
+  ): Promise<Omit<Room, 'participants'>> {
     const room = await this.roomModel.create({
       name: data.name,
       description: data.description,
@@ -55,14 +57,11 @@ export class RoomRepositoryImpl implements RoomRepository {
       name: room.name,
       description: room.description,
       hostId: room.host.toString(),
-      participants: room.participants?.map?.((p) => ({
-        id: p.toString(),
-      })),
     });
   }
 
   public async findById(id: string): Promise<Room> {
-    const room = await this.roomModel.findById(id);
+    const room = await this.roomModel.findById(id).populate('participants');
 
     if (room == null) {
       return CreateNullClass();
@@ -74,13 +73,16 @@ export class RoomRepositoryImpl implements RoomRepository {
       description: room.description,
       hostId: room.host.toString(),
       participants: room.participants?.map?.((p) => ({
-        id: p.toString(),
+        id: <string>(p as any)._id?.toString?.(),
+        username: <string>(p as any).username,
       })),
     });
   }
 
   public async findByHostId(hostId: string): Promise<Room> {
-    const room = await this.roomModel.findOne({ host: hostId });
+    const room = await this.roomModel
+      .findOne({ host: hostId })
+      .populate('participants');
 
     if (room == null) {
       return CreateNullClass();
@@ -92,7 +94,8 @@ export class RoomRepositoryImpl implements RoomRepository {
       description: room.description,
       hostId: room.host.toString(),
       participants: room.participants?.map?.((p) => ({
-        id: p.toString(),
+        id: <string>(p as any)._id?.toString?.(),
+        username: <string>(p as any).username,
       })),
     });
   }
@@ -108,15 +111,11 @@ export class RoomRepositoryImpl implements RoomRepository {
       updateQuery.description = data.description;
     }
 
-    if (data.participants != null) {
-      updateQuery.participants = {
-        $push: { participants: { $each: data.participants.map((p) => p.id) } },
-      };
-    }
-
-    const room = await this.roomModel.findByIdAndUpdate(id, updateQuery, {
-      new: true,
-    });
+    const room = await this.roomModel
+      .findByIdAndUpdate(id, updateQuery, {
+        new: true,
+      })
+      .populate('participants');
 
     if (room == null) {
       return CreateNullClass();
@@ -128,7 +127,64 @@ export class RoomRepositoryImpl implements RoomRepository {
       description: room.description,
       hostId: room.host.toString(),
       participants: room.participants?.map?.((p) => ({
-        id: p.toString(),
+        id: <string>(p as any)._id?.toString?.(),
+        username: <string>(p as any).username,
+      })),
+    });
+  }
+
+  public async addParticipant(
+    id: string,
+    participant: { id: string }[],
+  ): Promise<Room> {
+    const room = await this.roomModel
+      .findByIdAndUpdate(id, {
+        $push: {
+          participants: participant.map((p) => p.id),
+        },
+      })
+      .populate('participants');
+
+    if (room == null) {
+      return CreateNullClass();
+    }
+
+    return new Room({
+      id: room._id.toString(),
+      name: room.name,
+      description: room.description,
+      hostId: room.host.toString(),
+      participants: room.participants?.map?.((p) => ({
+        id: <string>(p as any)._id?.toString?.(),
+        username: <string>(p as any).username,
+      })),
+    });
+  }
+
+  public async removeParticipant(
+    id: string,
+    participants: { id: string }[],
+  ): Promise<Room> {
+    const room = await this.roomModel
+      .findByIdAndUpdate(id, {
+        $pull: {
+          participants: participants.map((p) => p.id),
+        },
+      })
+      .populate('participants');
+
+    if (room == null) {
+      return CreateNullClass();
+    }
+
+    return new Room({
+      id: room._id.toString(),
+      name: room.name,
+      description: room.description,
+      hostId: room.host.toString(),
+      participants: room.participants?.map?.((p) => ({
+        id: <string>(p as any)._id?.toString?.(),
+        username: <string>(p as any).username,
       })),
     });
   }

@@ -27,9 +27,9 @@ export class UserRepositoryImpl implements UserRepository {
   public async create(data: CreateUserData): Promise<User> {
     const user = await this.userModel.create({
       email: data.email,
-      username: data.firstName,
+      username: data.username,
       firstName: data.firstName,
-      lastName: data.firstName,
+      lastName: data.lastName,
       password: data.password,
       profileImg: data.profileImg,
     });
@@ -37,9 +37,9 @@ export class UserRepositoryImpl implements UserRepository {
     return new User({
       id: user._id.toString(),
       email: user.email,
-      username: user.firstName,
+      username: user.username,
       firstName: user.firstName,
-      lastName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       profileImg: user.profileImg,
     });
@@ -55,9 +55,9 @@ export class UserRepositoryImpl implements UserRepository {
     return new User({
       id: user._id.toString(),
       email: user.email,
-      username: user.firstName,
+      username: user.username,
       firstName: user.firstName,
-      lastName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       profileImg: user.profileImg,
     });
@@ -73,9 +73,9 @@ export class UserRepositoryImpl implements UserRepository {
     return new User({
       id: user._id.toString(),
       email: user.email,
-      username: user.firstName,
+      username: user.username,
       firstName: user.firstName,
-      lastName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       profileImg: user.profileImg,
     });
@@ -91,9 +91,9 @@ export class UserRepositoryImpl implements UserRepository {
     return new User({
       id: user._id.toString(),
       email: user.email,
-      username: user.firstName,
+      username: user.username,
       firstName: user.firstName,
-      lastName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       profileImg: user.profileImg,
     });
@@ -125,9 +125,9 @@ export class UserRepositoryImpl implements UserRepository {
     return new User({
       id: user._id.toString(),
       email: user.email,
-      username: user.firstName,
+      username: user.username,
       firstName: user.firstName,
-      lastName: user.firstName,
+      lastName: user.lastName,
       password: user.password,
       profileImg: user.profileImg,
     });

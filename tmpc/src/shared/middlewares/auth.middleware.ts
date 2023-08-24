@@ -38,7 +38,7 @@ export default async function AuthMiddleware(
     }
   }
 
-  const user = userService.getUserById(decodedPayload?.id);
+  const user = await userService.getUserById(String(decodedPayload?.id));
 
   if (user == null) {
     throw new UnAuthorizedException();
@@ -46,6 +46,8 @@ export default async function AuthMiddleware(
 
   // append user to request
   (req as any).user = user;
+
+  logger.log('AUTHENTICATED');
 
   next();
 }

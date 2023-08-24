@@ -51,8 +51,7 @@ export async function WsAuthMiddleware(
       return;
     }
 
-    // append userId to socket
-    (ws as any).userId = user.id; // TODO: remove this
+    // append user to socket
     (ws as any).user = user;
   } catch (e) {
     switch (true) {

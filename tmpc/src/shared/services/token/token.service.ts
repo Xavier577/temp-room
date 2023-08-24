@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import Env from '../../utils/env';
+import { Duration } from '../../enums';
 export interface TokenService {
   generate(data: string | Buffer | object, expiresIn?: string | number): string;
   generateAsync(
@@ -22,7 +23,7 @@ export class TokenServiceImpl implements TokenService {
     expiresIn?: string | number,
   ): string {
     return jwt.sign(data, this.options.secret, {
-      expiresIn: expiresIn ?? this.options.expiresIn,
+      expiresIn: expiresIn ?? this.options.expiresIn ?? Duration.HOUR,
     });
   }
 
@@ -34,7 +35,7 @@ export class TokenServiceImpl implements TokenService {
       jwt.sign(
         data,
         this.options.secret,
-        { expiresIn: expiresIn ?? this.options.expiresIn },
+        { expiresIn: expiresIn ?? this.options.expiresIn ?? Duration.HOUR },
         (err, encoded) => {
           if (err != null) {
             reject(err);

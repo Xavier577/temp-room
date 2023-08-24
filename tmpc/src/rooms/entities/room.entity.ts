@@ -5,5 +5,5 @@ export class Room extends PartialInstantiable<Room> {
   name: string;
   description: string;
   hostId: string;
-  participants: { id: string }[];
+  participants: { id: string; username: string }[];
 }

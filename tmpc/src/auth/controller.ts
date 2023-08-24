@@ -10,6 +10,8 @@ import hashingService, {
 import tokenService, {
   TokenService,
 } from '../shared/services/token/token.service';
+import { SignupDto } from './dto/signup.dto';
+import Exclude from '../shared/utils/exclude';
 
 export class AuthController {
   constructor(
@@ -17,6 +19,40 @@ export class AuthController {
     private readonly tokenService: TokenService,
     private readonly userService: UserService,
   ) {}
+
+  public signup = async (req: Request, res: Response): Promise<void> => {
+    const payload = new SignupDto(req.body);
+
+    const userWithEmail = await this.userService.getUserByEmail(payload.email);
+
+    if (userWithEmail != null) {
+      throw new BadException('User already exist with email');
+    }
+
+    const userWithUsername = await this.userService.getUserByUsername(
+      payload.username,
+    );
+
+    if (userWithUsername != null) {
+      throw new BadException('Username is already taken');
+    }
+
+    const hashedPassword = await this.hashingService.hash(payload.password);
+
+    const user = await this.userService.createUser({
+      email: payload.email,
+      username: payload.username,
+      password: hashedPassword,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+    });
+
+    const serializedUser = Exclude(user, ['password']);
+
+    const token = await this.tokenService.generateAsync({ id: user.id });
+
+    res.status(200).json({ token, user: serializedUser });
+  };
 
   public login = async (req: Request, res: Response): Promise<void> => {
     const payload = new LoginDto(req.body);

@@ -12,14 +12,14 @@ export interface JoinRoomARgs {
 export class RoomService {
   constructor(private readonly roomService: RoomRepository) {}
 
-  public async create(data: CreateRoomData): Promise<Room> {
+  public async create(
+    data: CreateRoomData,
+  ): Promise<Omit<Room, 'participants'>> {
     return this.roomService.create(data);
   }
 
   public async joinRoom(args: JoinRoomARgs): Promise<Room> {
-    return this.roomService.update(args.roomId, {
-      participants: [{ id: args.userId }],
-    });
+    return this.roomService.addParticipant(args.roomId, [{ id: args.userId }]);
   }
 
   public async getRoomById(id: string): Promise<Room> {
