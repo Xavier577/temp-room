@@ -19,7 +19,7 @@ export class RoomService {
   }
 
   public async joinRoom(args: JoinRoomARgs): Promise<Room> {
-    return this.roomService.addParticipant(args.roomId, [{ id: args.userId }]);
+    return this.roomService.addParticipant(args.roomId, [args.userId]);
   }
 
   public async getRoomById(id: string): Promise<Room> {

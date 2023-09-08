@@ -5,7 +5,7 @@ export default function Exclude<T extends object, K extends keyof T>(
   const j: { [name: string]: any } = JSON.parse(JSON.stringify(obj)); // make a copy of the object
 
   for (const key of keys) {
-    delete j[key as string];
+    delete j[<string>key];
   }
 
   return <Omit<T, K>>j;

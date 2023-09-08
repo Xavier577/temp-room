@@ -9,6 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "deasyncify": "^0.0.4",
     "device-detector-js": "^3.0.3",
@@ -22,6 +23,7 @@
     "ws": "^8.13.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.2",

@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  tmpc:
+    image: tmpc
+
+    restart: unless-stopped
+
+    env_file:
+      - ./.env
+
+    ports:
+      - "${PORT}:${PORT}"
+
+

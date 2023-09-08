@@ -9,8 +9,7 @@ export interface CreateRoomData
   hostId: string;
 }
 
-export interface UpdateRoomData
-  extends Partial<Pick<Room, 'name' | 'description'>> {}
+export type UpdateRoomData = Partial<Pick<Room, 'name' | 'description'>>;
 
 export interface RoomRepository {
   create(data: CreateRoomData): Promise<Omit<Room, 'participants'>>;
@@ -18,7 +17,8 @@ export interface RoomRepository {
   findById(id: string): Promise<Room>;
   findByHostId(hostId: string): Promise<Room>;
   update(id: string, data: UpdateRoomData): Promise<Room>;
-  addParticipant(id: string, participant: { id: string }[]): Promise<Room>;
+  addParticipant(id: string, participants: string[]): Promise<Room>;
+  removeParticipant(id: string, participants: string[]): Promise<Room>;
 }
 
 export class RoomRepositoryImpl implements RoomRepository {
@@ -135,12 +135,12 @@ export class RoomRepositoryImpl implements RoomRepository {
 
   public async addParticipant(
     id: string,
-    participant: { id: string }[],
+    participant: string[],
   ): Promise<Room> {
     const room = await this.roomModel
       .findByIdAndUpdate(id, {
         $push: {
-          participants: participant.map((p) => p.id),
+          participants: participant,
         },
       })
       .populate('participants');
@@ -161,14 +161,11 @@ export class RoomRepositoryImpl implements RoomRepository {
     });
   }
 
-  public async removeParticipant(
-    id: string,
-    participants: { id: string }[],
-  ): Promise<Room> {
+  async removeParticipant(id: string, participants: string[]): Promise<Room> {
     const room = await this.roomModel
       .findByIdAndUpdate(id, {
         $pull: {
-          participants: participants.map((p) => p.id),
+          participants: participants,
         },
       })
       .populate('participants');
