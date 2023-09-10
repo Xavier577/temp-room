@@ -18,7 +18,12 @@ async function main() {
 
   await Mongo.connect({ url: Env.get<string>('MONGO_DATABASE_URL') });
 
-  app.use(cors({ origin: '*' })); // allow any origin for now
+  app.use(
+    cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS', 'PATCH'],
+    }),
+  ); // allow any origin for now
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
