@@ -2,6 +2,7 @@ import roomService, { RoomService } from './services/room.service';
 import { Request, Response } from 'express';
 import { User } from '../users/entities/user.entity';
 import { CreateRoomDto } from './dtos/create-room.dto';
+import { Types } from 'mongoose';
 
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
@@ -27,11 +28,19 @@ export class RoomController {
   };
 
   public getRoomById = async (req: Request, res: Response) => {
-    const id = req.params.id;
+    try {
+      const id = new Types.ObjectId(req.params.id);
 
-    const room = await this.roomService.getRoomById(id);
+      const room = await this.roomService.getRoomById(id.toString());
 
-    res.status(200).json(room);
+      if (room == null) {
+        res.status(404).json({ message: 'Room Not Found' });
+      }
+
+      res.status(200).json(room);
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid User Id' });
+    }
   };
 }
 

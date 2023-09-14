@@ -1,6 +1,7 @@
 import * as mongoose from 'mongoose';
 import Deasyncify from 'deasyncify';
 import Logger from '../logger';
+
 interface DatabaseConnectArgs {
   url: string;
   /** Set too false to [disable buffering](http://mongoosejs.com/docs/faq.html#callback_never_executes) on all models associated with this connection. */

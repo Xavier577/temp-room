@@ -29,6 +29,9 @@ async function main() {
 
   app.use(RequestLoggerMiddleware);
 
+  app.get('/edo0aim9Eezausebu_health', (_req, res) => {
+    res.sendStatus(200);
+  });
   app.use('/api/v1', v1Router);
 
   app.use(GlobalErrorCatcherMiddleware);
