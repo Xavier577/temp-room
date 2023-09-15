@@ -90,11 +90,14 @@ export class ChatWebsocketHandler {
     });
 
     // broadcast user's message
-    const msg = new WsMessage<Omit<Message, 'roomId' | 'delivered'>>({
+    const msg = new WsMessage<
+      Omit<Message, 'roomId' | 'delivered'> & { senderUsername: string }
+    >({
       data: {
         id: savedMsg.id,
         text: savedMsg.text,
         senderId: savedMsg.senderId,
+        senderUsername: user.username,
         sentAt: savedMsg.sentAt,
       },
       event: payload.event,

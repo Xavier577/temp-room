@@ -43,6 +43,8 @@ export default function EnterRoom({ params }: RoomParamProp) {
 
   const [textInput, textInputHandler] = useForm({ msg: '' });
 
+  const [msgStack, setMsgStack] = useState<any[]>([]);
+
   useEffect(() => {
     (async () => {
       let userData: User;
@@ -105,24 +107,38 @@ export default function EnterRoom({ params }: RoomParamProp) {
         }
       }
 
-      // const ws = new WebSocket('ws://127.0.0.1:9000/api/room');
-      //
-      // ws.addEventListener('message', (e) => {
-      //   const msg = JSON.parse(e.data);
-      //
-      //   console.log(msg);
-      //
-      //   if (msg.error != null) {
-      //   }
-      // });
-      //
-      // ws.addEventListener('error', (e) => {
-      //   console.error(e);
-      // });
-      //
-      // ws.addEventListener('close', (e) => {
-      //   console.log(e);
-      // });
+      const ws = new WebSocket(
+        `ws://127.0.0.1:9000/api/room?ticket=${accessToken}`,
+      );
+
+      ws.addEventListener('open', (e) => {
+        console.log(e);
+        alert('connected');
+        setWs(ws);
+      });
+
+      ws.addEventListener('message', (e) => {
+        const msg = JSON.parse(e.data);
+
+        console.log(msg);
+
+        if (msg.error != null) {
+          console.log(msg.error);
+          return;
+        }
+
+        setMsgStack((currState) => {
+          return [...currState, msg];
+        });
+      });
+
+      ws.addEventListener('error', (e) => {
+        console.error(e);
+      });
+
+      ws.addEventListener('close', (e) => {
+        console.log(e);
+      });
     })();
   }, [accessToken, appendRoom, params.id, router]);
 
@@ -156,11 +172,41 @@ export default function EnterRoom({ params }: RoomParamProp) {
                     onClick={(e) => {
                       if (textInput.msg != '') {
                         // send message to socket
+                        const msg = JSON.stringify({
+                          event: 'chat',
+                          data: {
+                            message: textInput.msg,
+                            roomId: rooms.get(params.id)?.id,
+                          },
+                        });
+
+                        ws?.send(msg);
                       }
                     }}
                   >
                     Send
                   </button>
+
+                  <br />
+
+                  {ws != null &&
+                    msgStack?.map((msg) => {
+                      const TextComponent = (props: { key: any }) => (
+                        <div key={props.key}>
+                          <pre>senderUsername: {msg?.data?.senderUsername}</pre>
+                          <pre>senderId: {msg?.data?.senderId}</pre>
+                          <pre>sentAt: {msg?.data?.sentAt}</pre>
+                          <pre>text: {msg?.data?.text}</pre>
+                        </div>
+                      );
+
+                      // setMsgStack((currState) => {
+                      //   currState.pop();
+                      //   return currState;
+                      // });
+
+                      return <TextComponent key={msg?.data?.id} />;
+                    })}
                 </>
               ) : (
                 <>
