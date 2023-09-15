@@ -5,12 +5,25 @@ import userService from '../../users/services/user.service';
 import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import Logger from '../../logger';
 import tokenService from '../../shared/services/token/token.service';
+// import querystring from 'querystring';
+// import { URL } from 'url';
 
 export async function WsAuthMiddleware(
   ws: WebSocket,
   request: http.IncomingMessage,
 ) {
   const logger = new Logger(WsAuthMiddleware.name);
+
+  // const parsedUrl = new URL(
+  //   String(request.url),
+  //   `https://${request.headers.host}`,
+  // );
+  //
+  // const queryParams = querystring.parse(String(parsedUrl.searchParams));
+  //
+  // logger.log(JSON.stringify({ wsUrl: ws.url, queryParams }));
+  //
+  // const ticket = <string>queryParams?.ticket;
 
   const authorizationHeader = String(request.headers['authorization']);
 
