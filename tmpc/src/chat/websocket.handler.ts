@@ -3,11 +3,13 @@ import { WsPayload } from '../websocket/dtos/ws-payload';
 import { WsBroadcastFn } from '../websocket/middlewares/ws-broadcast.middleware';
 import roomService, { RoomService } from '../rooms/services/room.service';
 import { WsMessage } from '../websocket/dtos/ws-message';
-import { WsErrorCode } from '../shared/errors/websocket';
+import { WsErrorCode, WsException } from '../shared/errors/websocket';
 import Logger from '../logger';
 import chatService, { ChatService } from './services/chat.service';
 import { Message } from './entities/message.entity';
 import { User } from '../users/entities/user.entity';
+import Deasyncify from 'deasyncify';
+import parseAsyncObjectId from '../shared/utils/parse-async-objectid';
 
 export class ChatWebsocketHandler {
   private readonly logger = new Logger(ChatWebsocketHandler.name);
@@ -16,29 +18,29 @@ export class ChatWebsocketHandler {
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
   ) {}
+
   public sendMessage = async (
     payload: WsPayload,
     ws: WebSocket,
     broadcast: WsBroadcastFn,
   ): Promise<void> => {
-    const room = await this.roomService.getRoomById(payload.data.roomId);
+    const [, roomIdParsingErr] = await Deasyncify.watch(
+      parseAsyncObjectId(payload.data.roomId),
+    );
+
+    const room =
+      roomIdParsingErr == null
+        ? await this.roomService.getRoomById(payload.data.roomId)
+        : null;
 
     if (room == null) {
       this.logger.log('ROOM_NOT_FOUND');
 
-      const msg = new WsMessage({
-        status: 'error',
-        error: {
-          code: WsErrorCode.BAD_USER_INPUT,
-          message: 'INVALID_ROOM_ID',
-        },
-      }).stringify();
-
-      ws.send(msg);
-
-      ws.close();
-
-      return;
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'INVALID_ROOM_ID',
+        true,
+      );
     }
 
     const user = <User>(ws as any).user;
@@ -46,19 +48,11 @@ export class ChatWebsocketHandler {
     if (user == null) {
       this.logger.log('USER_NOT_FOUND');
 
-      const msg = new WsMessage({
-        status: 'error',
-        error: {
-          code: WsErrorCode.INTERNAL_SERVER_ERROR,
-          message: 'SOMETHING_WENT_WRONG',
-        },
-      }).stringify();
-
-      ws.send(msg);
-
-      ws.close();
-
-      return;
+      throw new WsException(
+        WsErrorCode.INTERNAL_SERVER_ERROR,
+        'SOMETHING_WENT_WRONG',
+        true,
+      );
     }
 
     const USER_IS_PART_OF_ROOM = room.participants.some(
@@ -68,19 +62,11 @@ export class ChatWebsocketHandler {
     if (!USER_IS_PART_OF_ROOM) {
       this.logger.log('USER_NOT_PART_OF_ROOM');
 
-      const msg = new WsMessage({
-        status: 'error',
-        error: {
-          code: WsErrorCode.BAD_USER_INPUT,
-          message: 'USER_NOT_IN_ROOM',
-        },
-      }).stringify();
-
-      ws.send(msg);
-
-      ws.close();
-
-      return;
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'USER_NOT_IN_ROOM',
+        true,
+      );
     }
 
     const savedMsg = await this.chatService.addMsgToRoomChat({

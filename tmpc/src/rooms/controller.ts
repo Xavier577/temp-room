@@ -2,12 +2,13 @@ import roomService, { RoomService } from './services/room.service';
 import { Request, Response } from 'express';
 import { User } from '../users/entities/user.entity';
 import { CreateRoomDto } from './dtos/create-room.dto';
-import { Types } from 'mongoose';
+import parseAsyncObjectId from '../shared/utils/parse-async-objectid';
+import Deasyncify from 'deasyncify';
 
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
-  public createRoom = async (req: Request, res: Response) => {
+  public createRoom = async (req: Request, res: Response): Promise<void> => {
     const payload = new CreateRoomDto(req.body);
 
     const user = <User>(req as any).user;
@@ -21,26 +22,39 @@ export class RoomController {
     res.status(200).json(room);
   };
 
-  public getAllRooms = async (_req: Request, res: Response) => {
+  public getAllRooms = async (_req: Request, res: Response): Promise<void> => {
     const rooms = await this.roomService.getAllRooms();
 
     res.status(200).json(rooms);
   };
 
-  public getRoomById = async (req: Request, res: Response) => {
-    try {
-      const id = new Types.ObjectId(req.params.id);
+  public getRoomById = async (req: Request, res: Response): Promise<void> => {
+    const [id, idParsingErr] = await Deasyncify.watch(
+      parseAsyncObjectId(req.params.id),
+    );
 
-      const room = await this.roomService.getRoomById(id.toString());
-
-      if (room == null) {
-        res.status(404).json({ message: 'Room Not Found' });
-      }
-
-      res.status(200).json(room);
-    } catch (error) {
-      res.status(400).json({ message: 'Invalid User Id' });
+    if (idParsingErr != null) {
+      res.status(400).json({ message: 'Invalid Room Id' });
     }
+
+    const room = await this.roomService.getRoomById(id!.toString());
+
+    if (room == null) {
+      res.status(404).json({ message: 'Room Not Found' });
+    }
+
+    res.status(200).json(room);
+  };
+
+  public getRoomsUserIsIn = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    const user = (<Request & { user: User }>req).user;
+
+    const rooms = await this.roomService.getRoomsUserIsIn(user.id);
+
+    res.status(200).json(rooms);
   };
 }
 

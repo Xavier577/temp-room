@@ -14,6 +14,7 @@ export type UpdateRoomData = Partial<Pick<Room, 'name' | 'description'>>;
 export interface RoomRepository {
   create(data: CreateRoomData): Promise<Omit<Room, 'participants'>>;
   findAll(): Promise<Room[]>;
+  findAllParticipating(userId: string): Promise<Room[]>;
   findById(id: string): Promise<Room>;
   findByHostId(hostId: string): Promise<Room>;
   update(id: string, data: UpdateRoomData): Promise<Room>;
@@ -26,6 +27,26 @@ export class RoomRepositoryImpl implements RoomRepository {
 
   public async findAll(): Promise<Room[]> {
     const rooms = await this.roomModel.find().populate('participants');
+
+    return rooms.map(
+      (room) =>
+        new Room({
+          id: room._id.toString(),
+          name: room.name,
+          description: room.description,
+          hostId: room.host.toString(),
+          participants: room.participants?.map?.((p) => ({
+            id: <string>(p as any)._id?.toString?.(),
+            username: <string>(p as any)?.username,
+          })),
+        }),
+    );
+  }
+
+  public async findAllParticipating(userId: string): Promise<Room[]> {
+    const rooms = await this.roomModel
+      .find({ participants: userId })
+      .populate('participants');
 
     return rooms.map(
       (room) =>

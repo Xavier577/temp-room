@@ -9,6 +9,7 @@ export class WsException extends Error {
   constructor(
     public readonly code: WsErrorCode,
     public readonly message: string,
+    public readonly shouldCloseSocket = false,
   ) {
     super(message);
   }

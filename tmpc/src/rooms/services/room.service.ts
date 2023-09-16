@@ -10,24 +10,28 @@ export interface JoinRoomARgs {
 }
 
 export class RoomService {
-  constructor(private readonly roomService: RoomRepository) {}
+  constructor(private readonly roomRepository: RoomRepository) {}
 
   public async create(
     data: CreateRoomData,
   ): Promise<Omit<Room, 'participants'>> {
-    return this.roomService.create(data);
+    return this.roomRepository.create(data);
   }
 
   public async joinRoom(args: JoinRoomARgs): Promise<Room> {
-    return this.roomService.addParticipant(args.roomId, [args.userId]);
+    return this.roomRepository.addParticipant(args.roomId, [args.userId]);
   }
 
   public async getRoomById(id: string): Promise<Room> {
-    return this.roomService.findById(id);
+    return this.roomRepository.findById(id);
   }
 
   public async getAllRooms(): Promise<Room[]> {
-    return this.roomService.findAll();
+    return this.roomRepository.findAll();
+  }
+
+  public async getRoomsUserIsIn(userId: string): Promise<Room[]> {
+    return this.roomRepository.findAllParticipating(userId);
   }
 }
 

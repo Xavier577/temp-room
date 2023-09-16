@@ -17,6 +17,11 @@ roomRouter.post(
   WatchAsyncController(roomController.createRoom),
 );
 roomRouter.get('/all', WatchAsyncController(roomController.getAllRooms));
+roomRouter.get(
+  '/participating',
+  WatchAsyncMiddleware(AuthMiddleware),
+  WatchAsyncController(roomController.getRoomsUserIsIn),
+);
 roomRouter.get('/:id', WatchAsyncController(roomController.getRoomById));
 
 export default roomRouter;

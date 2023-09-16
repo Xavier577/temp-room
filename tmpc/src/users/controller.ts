@@ -1,19 +1,17 @@
 import { Request, Response } from 'express';
-import userService, { UserService } from './services/user.service';
 import Exclude from '../shared/utils/exclude';
+import { User } from './entities/user.entity';
 
 export class Controller {
-  constructor(private readonly userService: UserService) {}
+  constructor() {}
 
   public getUser = async (req: Request, res: Response) => {
-    const id = (<Request & { user: { id: string } }>req).user.id;
-
-    const user = await this.userService.getUserById(id);
+    const user = (<Request & { user: User }>req).user;
 
     res.status(200).json(Exclude(user, ['password']));
   };
 }
 
-const userController = new Controller(userService);
+const userController = new Controller();
 
 export default userController;
