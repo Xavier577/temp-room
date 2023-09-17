@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AppState, Room, RoomState } from '@store/states';
+import { AppState, Room, RoomState } from '@app/store/states';
 
 const createRoomSlice: StateCreator<AppState, [], [], RoomState> = (set) => ({
   rooms: new Map<string, Room>(),

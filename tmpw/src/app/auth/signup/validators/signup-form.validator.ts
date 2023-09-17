@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export const signupPayloadValidatorSchema = Joi.object({
+export const signupFormValidator = Joi.object({
   email: Joi.string().email().required(),
 
   username: Joi.string()
@@ -11,5 +11,10 @@ export const signupPayloadValidatorSchema = Joi.object({
 
   lastName: Joi.string().optional(),
 
-  password: Joi.string().required(),
+  password: Joi.string().min(8).required(),
+
+  confirmPassword: Joi.any()
+    .valid(Joi.ref('password'))
+    .required()
+    .label('password must match'),
 }).unknown();

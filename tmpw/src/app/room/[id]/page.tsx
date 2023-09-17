@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import tempRoom from '@services/temp-room';
-import useAppStore from '@store/index';
-import { Participant, Room, User } from '@store/states';
+import tempRoom from '@app/services/temp-room';
+import useAppStore from '@app/store/index';
+import { Participant, Room, User } from '@app/store/states';
 import { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
-import useForm from '@hooks/use-form';
+import useForm from '@app/hooks/use-form';
 
 export type RoomParamProp = {
   params: { id: string };
@@ -199,11 +199,6 @@ export default function EnterRoom({ params }: RoomParamProp) {
                           <pre>text: {msg?.data?.text}</pre>
                         </div>
                       );
-
-                      // setMsgStack((currState) => {
-                      //   currState.pop();
-                      //   return currState;
-                      // });
 
                       return <TextComponent key={msg?.data?.id} />;
                     })}

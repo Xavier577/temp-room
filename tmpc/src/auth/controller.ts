@@ -12,6 +12,7 @@ import tokenService, {
 } from '../shared/services/token/token.service';
 import { SignupDto } from './dto/signup.dto';
 import Exclude from '../shared/utils/exclude';
+import { LOGIN_MODE } from '../shared/enums';
 
 export class AuthController {
   constructor(
@@ -66,7 +67,12 @@ export class AuthController {
     }
 
     if (user == null) {
-      throw new BadException();
+      if (payload.mode == LOGIN_MODE.USERNAME) {
+        throw new BadException('Invalid username');
+      }
+      if (payload.mode == LOGIN_MODE.EMAIL) {
+        throw new BadException('Invalid email');
+      }
     }
 
     const PASSWORD_IS_CORRECT = await this.hashingService.compare(
@@ -75,7 +81,7 @@ export class AuthController {
     );
 
     if (!PASSWORD_IS_CORRECT) {
-      throw new BadException('INCORRECT_PASSWORD');
+      throw new BadException('incorrect password');
     }
 
     const token = await this.tokenService.generateAsync({ id: user.id });

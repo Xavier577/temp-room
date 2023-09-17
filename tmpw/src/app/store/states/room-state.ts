@@ -1,4 +1,4 @@
-import { Instantiable } from '@utils/instantiable';
+import { Instantiable } from '@app/utils/instantiable';
 
 export class Participant extends Instantiable<Participant> {
   id!: string;

@@ -21,6 +21,7 @@
     "paths": {
       "@app/*": ["./src/app/*"],
       "@components/*": ["./src/components/*"],
+      "@enums/*": ["./src/enums/*"],
       "@hooks/*": ["./src/hooks/*"],
       "@services/*": ["./src/services/*"],
       "@store/*": ["./src/store/*"],

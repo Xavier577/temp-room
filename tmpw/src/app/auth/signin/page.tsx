@@ -14,7 +14,7 @@ import Hide from '@app/components/icons/hide';
 import Show from '@app/components/icons/show';
 import { AxiosError } from 'axios';
 
-export default function SignUp() {
+export default function SignIn() {
   const [formValue, handleChange] = useForm({ identifier: '', password: '' });
 
   const updateAccessToken = useAppStore((state) => state.updateAccessToken);
