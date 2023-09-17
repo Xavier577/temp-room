@@ -44,7 +44,7 @@ export default function Protected({
       .catch((err) => {
         if (err instanceof AxiosError) {
           if (err.response?.status === 401) {
-            router.push('/auth/login');
+            router.push('/auth/signin');
 
             return;
           }

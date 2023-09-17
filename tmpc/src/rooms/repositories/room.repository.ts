@@ -20,6 +20,7 @@ export interface RoomRepository {
   update(id: string, data: UpdateRoomData): Promise<Room>;
   addParticipant(id: string, participants: string[]): Promise<Room>;
   removeParticipant(id: string, participants: string[]): Promise<Room>;
+  deleteRoom(id: string): Promise<void>;
 }
 
 export class RoomRepositoryImpl implements RoomRepository {
@@ -182,7 +183,10 @@ export class RoomRepositoryImpl implements RoomRepository {
     });
   }
 
-  async removeParticipant(id: string, participants: string[]): Promise<Room> {
+  public async removeParticipant(
+    id: string,
+    participants: string[],
+  ): Promise<Room> {
     const room = await this.roomModel
       .findByIdAndUpdate(id, {
         $pull: {
@@ -205,6 +209,10 @@ export class RoomRepositoryImpl implements RoomRepository {
         username: <string>(p as any).username,
       })),
     });
+  }
+
+  public async deleteRoom(id: string): Promise<void> {
+    await this.roomModel.findByIdAndDelete(id);
   }
 }
 

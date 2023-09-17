@@ -89,10 +89,48 @@ export default function EnterRoom({ params }: RoomParamProp) {
         );
 
         setIsHost(roomData?.hostId === userData!.id);
+
+        // establish websocket connection
+        const ws = new WebSocket(
+          `ws://127.0.0.1:9000/api/room?ticket=${accessToken}`,
+        );
+
+        ws.addEventListener('open', (e) => {
+          console.log(e);
+          alert('connected');
+          setWs(ws);
+        });
+
+        ws.addEventListener('message', (e) => {
+          const msg = JSON.parse(e.data);
+
+          console.log(msg);
+
+          if (msg.error != null) {
+            console.log(msg.error);
+            return;
+          }
+
+          switch (msg.event) {
+            case 'chat':
+              setMsgStack((currState) => {
+                return [...currState, msg];
+              });
+              break;
+          }
+        });
+
+        ws.addEventListener('error', (e) => {
+          console.error(e);
+        });
+
+        ws.addEventListener('close', (e) => {
+          console.log(e);
+        });
       } catch (err) {
         console.error(err);
         if (err instanceof AxiosError) {
-          setErrMsg(err.response?.data?.message);
+          setErrMsg(err.response?.data);
           switch (err.response?.status) {
             case 400:
               setInvalidId(true);
@@ -106,39 +144,6 @@ export default function EnterRoom({ params }: RoomParamProp) {
           }
         }
       }
-
-      const ws = new WebSocket(
-        `ws://127.0.0.1:9000/api/room?ticket=${accessToken}`,
-      );
-
-      ws.addEventListener('open', (e) => {
-        console.log(e);
-        alert('connected');
-        setWs(ws);
-      });
-
-      ws.addEventListener('message', (e) => {
-        const msg = JSON.parse(e.data);
-
-        console.log(msg);
-
-        if (msg.error != null) {
-          console.log(msg.error);
-          return;
-        }
-
-        setMsgStack((currState) => {
-          return [...currState, msg];
-        });
-      });
-
-      ws.addEventListener('error', (e) => {
-        console.error(e);
-      });
-
-      ws.addEventListener('close', (e) => {
-        console.log(e);
-      });
     })();
   }, [accessToken, appendRoom, params.id, router]);
 
@@ -190,7 +195,7 @@ export default function EnterRoom({ params }: RoomParamProp) {
                   <br />
 
                   {ws != null &&
-                    msgStack?.map((msg) => {
+                    msgStack?.map((msg, idx) => {
                       const TextComponent = (props: { key: any }) => (
                         <div key={props.key}>
                           <pre>senderUsername: {msg?.data?.senderUsername}</pre>
@@ -200,7 +205,7 @@ export default function EnterRoom({ params }: RoomParamProp) {
                         </div>
                       );
 
-                      return <TextComponent key={msg?.data?.id} />;
+                      return <TextComponent key={`${idx}-${msg?.data?.id}`} />;
                     })}
                 </>
               ) : (

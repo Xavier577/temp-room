@@ -4,6 +4,7 @@ import { User } from '../users/entities/user.entity';
 import { CreateRoomDto } from './dtos/create-room.dto';
 import parseAsyncObjectId from '../shared/utils/parse-async-objectid';
 import Deasyncify from 'deasyncify';
+import { BadException, NotFoundException } from '../shared/errors/http';
 
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
@@ -34,13 +35,13 @@ export class RoomController {
     );
 
     if (idParsingErr != null) {
-      res.status(400).json({ message: 'Invalid Room Id' });
+      throw new BadException('Invalid Room Id');
     }
 
     const room = await this.roomService.getRoomById(id!.toString());
 
     if (room == null) {
-      res.status(404).json({ message: 'Room Not Found' });
+      throw new NotFoundException('Room Not Found');
     }
 
     res.status(200).json(room);

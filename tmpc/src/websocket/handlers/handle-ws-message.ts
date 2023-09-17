@@ -4,7 +4,6 @@ import { WsPayload } from '../dtos/ws-payload';
 import { WsBroadcastMiddleware } from '../middlewares/ws-broadcast.middleware';
 import roomWebsocketHandler from '../../rooms/websocket.handler';
 import chatWebsocketHandler from '../../chat/websocket.handler';
-import { WsMessage } from '../dtos/ws-message';
 import { WsErrorCode, WsException } from '../../shared/errors/websocket';
 
 export type WsMessageEventHandler = (
@@ -41,22 +40,31 @@ export function handleWsMessage(
             .sendMessage(payload, ws, broadcastFn)
             .catch((e) => ws.emit('error', e));
           break;
+        case 'end_room':
+          roomWebsocketHandler
+            .endRoom(payload, ws, broadcastFn)
+            .catch((e) => ws.emit('error', e));
+          break;
+
+        case 'remove_participant':
+          roomWebsocketHandler
+            .removeParticipant(payload, ws, broadcastFn)
+            .catch((e) => ws.emit('error', e));
+          break;
         case 'leave_room':
-          // leave room
+          roomWebsocketHandler
+            .leaveRoom(payload, ws, broadcastFn)
+            .catch((e) => ws.emit('error', e));
           break;
         default:
-          const data = new WsMessage({
-            status: 'error',
-            error: {
-              code: WsErrorCode.BAD_USER_INPUT,
-              message: 'INVALID_EVENT_TYPE',
-            },
-          }).stringify();
-
-          ws.send(data);
+          ws.emit(
+            'error',
+            new WsException(WsErrorCode.BAD_USER_INPUT, 'INVALID_EVENT_TYPE'),
+          );
       }
     } catch (e) {
       if (e instanceof SyntaxError) {
+        // catch invalid json message
         ws.emit(
           'error',
           new WsException(WsErrorCode.BAD_USER_INPUT, e.message),

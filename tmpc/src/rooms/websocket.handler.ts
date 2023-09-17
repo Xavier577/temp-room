@@ -10,6 +10,7 @@ import { Message } from '../chat/entities/message.entity';
 import { User } from '../users/entities/user.entity';
 import Deasyncify from 'deasyncify';
 import parseAsyncObjectId from '../shared/utils/parse-async-objectid';
+import { Duration } from '../shared/enums';
 
 export class RoomWebsocketHandler {
   private readonly logger = new Logger(RoomWebsocketHandler.name);
@@ -99,19 +100,300 @@ export class RoomWebsocketHandler {
     }
 
     broadcast(msg, {
+      includeSelf: true,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+        return updatedRoom.participants.some((r) => r.id === userId);
+      },
+    });
+  };
+
+  public leaveRoom = async (
+    payload: WsPayload,
+    ws: WebSocket,
+    broadcast: WsBroadcastFn,
+  ): Promise<void> => {
+    const [, roomIdParsingErr] = await Deasyncify.watch(
+      parseAsyncObjectId(payload.data.roomId),
+    );
+
+    const room =
+      roomIdParsingErr == null
+        ? await this.roomService.getRoomById(payload.data.roomId)
+        : null;
+
+    if (room == null) {
+      this.logger.log('ROOM_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'INVALID_ROOM_ID',
+        true,
+      );
+    }
+
+    const user = <User>(ws as any).user;
+
+    if (user == null) {
+      this.logger.log('USER_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.INTERNAL_SERVER_ERROR,
+        'SOMETHING_WENT_WRONG',
+        true,
+      );
+    }
+
+    const USER_IS_PART_OF_ROOM = room.participants.some(
+      (u) => u.id === user.id,
+    );
+
+    if (!USER_IS_PART_OF_ROOM) {
+      this.logger.log('USER_NOT_PART_OF_ROOM');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'USER_NOT_IN_ROOM',
+        true,
+      );
+    }
+
+    await this.roomService.leaveRoom({ userId: user.id, roomId: room.id });
+
+    const msgToAlertSelf = new WsMessage({
+      event: 'user_left',
+      data: { message: `you left ${room.name}` },
+    }).stringify();
+
+    const msgToAlertOthers = new WsMessage({
+      event: 'user_left',
+      data: { message: `${user.username} left ${room.name}` },
+    }).stringify();
+
+    broadcast(msgToAlertSelf, {
+      includeSelf: true,
       shouldBroadcastOnlyIf: (client) => {
         const userId = <string>(client as any).user?.id;
 
-        let IS_PART_OF_ROOM = false;
+        const IS_LEAVING_PARTICIPANT = user.id === userId;
 
-        for (const participant of updatedRoom.participants) {
-          if (participant.id === userId) {
-            IS_PART_OF_ROOM = true;
-            break;
-          }
+        if (IS_LEAVING_PARTICIPANT) {
+          // close participants connection after 3 seconds
+          setTimeout(() => {
+            if (client.readyState === WebSocket.OPEN) client.close();
+          }, 3 * Duration.SECOND);
         }
 
-        return IS_PART_OF_ROOM;
+        return IS_LEAVING_PARTICIPANT;
+      },
+    });
+
+    broadcast(msgToAlertOthers, {
+      includeSelf: false,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+        const MUST_NOT_BE_CURRENT_USER = user.id !== userId;
+        return room.participants.some(
+          (r) => r.id === userId && MUST_NOT_BE_CURRENT_USER,
+        );
+      },
+    });
+  };
+
+  public removeParticipant = async (
+    payload: WsPayload<{ roomId: string; participantsId: string }>,
+    ws: WebSocket,
+    broadcast: WsBroadcastFn,
+  ): Promise<void> => {
+    const [, roomIdParsingErr] = await Deasyncify.watch(
+      parseAsyncObjectId(payload.data.roomId),
+    );
+
+    const room =
+      roomIdParsingErr == null
+        ? await this.roomService.getRoomById(payload.data.roomId)
+        : null;
+
+    if (room == null) {
+      this.logger.log('ROOM_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'INVALID_ROOM_ID',
+        true,
+      );
+    }
+
+    const user = <User>(ws as any).user;
+
+    if (user == null) {
+      this.logger.log('USER_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.INTERNAL_SERVER_ERROR,
+        'SOMETHING_WENT_WRONG',
+        true,
+      );
+    }
+
+    const USER_IS_HOST = room.hostId === user.id;
+
+    if (!USER_IS_HOST) {
+      this.logger.log('USER_NOT_HOST');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'ONLY_HOST_CAN_END_ROOM',
+      );
+    }
+
+    const participant = room.participants.find(
+      (participant) => participant.id === payload.data.participantsId,
+    );
+
+    if (participant == null) {
+      this.logger.log('PARTICIPANT_IS_NOT_IN_ROOM');
+
+      throw new WsException(
+        WsErrorCode.CONFLICT,
+        'NO_PARTICIPANT_WITH_SUCH_ID',
+      );
+    }
+
+    await this.roomService.leaveRoom({
+      userId: participant.id,
+      roomId: room.id,
+    });
+
+    const msgToAlertHost = new WsMessage({
+      event: 'user_removed',
+      data: { message: `you removed ${user.username}` },
+    }).stringify();
+
+    const msgToAlertRemovedParticipant = new WsMessage({
+      event: 'user_removed',
+      data: {
+        id: participant.id,
+        message: `${user.username} removed you`,
+      },
+    }).stringify();
+
+    const msgToAlertOthers = new WsMessage({
+      event: 'user_removed',
+      data: { message: `${user.username} removed ${participant.username}` },
+    }).stringify();
+
+    broadcast(msgToAlertHost, {
+      includeSelf: true,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+        return room.hostId === userId;
+      },
+    });
+
+    broadcast(msgToAlertRemovedParticipant, {
+      includeSelf: false,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+        const IS_REMOVED_PARTICIPANT = participant.id === userId;
+
+        if (IS_REMOVED_PARTICIPANT) {
+          // close participant's connection after 3 seconds
+          setTimeout(() => {
+            if (client.readyState === WebSocket.OPEN) client.close();
+          }, 3 * Duration.SECOND);
+        }
+
+        return IS_REMOVED_PARTICIPANT;
+      },
+    });
+
+    broadcast(msgToAlertOthers, {
+      includeSelf: false,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+
+        const IS_NOT_REMOVED_PARTICIPANT = participant.id != userId;
+
+        const IS_NOT_HOST = room.hostId != userId;
+
+        return room.participants.some(
+          (r) => r.id === userId && IS_NOT_HOST && IS_NOT_REMOVED_PARTICIPANT,
+        );
+      },
+    });
+  };
+
+  public endRoom = async (
+    payload: WsPayload,
+    ws: WebSocket,
+    broadcast: WsBroadcastFn,
+  ): Promise<void> => {
+    const [, roomIdParsingErr] = await Deasyncify.watch(
+      parseAsyncObjectId(payload.data.roomId),
+    );
+
+    const room =
+      roomIdParsingErr == null
+        ? await this.roomService.getRoomById(payload.data.roomId)
+        : null;
+
+    if (room == null) {
+      this.logger.log('ROOM_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'INVALID_ROOM_ID',
+        true,
+      );
+    }
+
+    const user = <User>(ws as any).user;
+
+    if (user == null) {
+      this.logger.log('USER_NOT_FOUND');
+
+      throw new WsException(
+        WsErrorCode.INTERNAL_SERVER_ERROR,
+        'SOMETHING_WENT_WRONG',
+        true,
+      );
+    }
+
+    const USER_IS_HOST = room.hostId === user.id;
+
+    if (!USER_IS_HOST) {
+      this.logger.log('USER_NOT_HOST');
+
+      throw new WsException(
+        WsErrorCode.BAD_USER_INPUT,
+        'ONLY_HOST_CAN_END_ROOM',
+      );
+    }
+
+    const msg = new WsMessage({
+      event: 'room_ended',
+      data: { message: `${user.username} has ended the room` },
+    }).stringify();
+
+    broadcast(msg, {
+      includeSelf: false,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+
+        const IS_PARTICIPANT = room.participants.some((r) => r.id === userId);
+
+        if (IS_PARTICIPANT) {
+          // close participants connection after 3 seconds
+          setTimeout(() => {
+            if (client.readyState === WebSocket.OPEN) client.close();
+          }, 3 * Duration.SECOND);
+        }
+
+        return IS_PARTICIPANT;
+      },
+      afterBroadcast: async () => {
+        await this.roomService.endRoom(room.id);
       },
     });
   };

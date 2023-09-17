@@ -13,6 +13,7 @@ export function handleWsError(ws: WebSocket): WsErrorEventHandler {
 
     if (e instanceof WsException) {
       const data = new WsMessage({
+        event: 'error',
         status: 'error',
         error: { code: e.code, message: e.message },
       }).stringify();
@@ -26,6 +27,7 @@ export function handleWsError(ws: WebSocket): WsErrorEventHandler {
     }
 
     const data = new WsMessage({
+      event: 'error',
       status: 'error',
       error: {
         code: WsErrorCode.INTERNAL_SERVER_ERROR,

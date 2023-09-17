@@ -4,10 +4,12 @@ import roomRepository, {
   RoomRepository,
 } from '../repositories/room.repository';
 
-export interface JoinRoomARgs {
+export interface JoinRoomArgs {
   roomId: string;
   userId: string;
 }
+
+export type LeaveRoomArgs = JoinRoomArgs;
 
 export class RoomService {
   constructor(private readonly roomRepository: RoomRepository) {}
@@ -18,7 +20,7 @@ export class RoomService {
     return this.roomRepository.create(data);
   }
 
-  public async joinRoom(args: JoinRoomARgs): Promise<Room> {
+  public async joinRoom(args: JoinRoomArgs): Promise<Room> {
     return this.roomRepository.addParticipant(args.roomId, [args.userId]);
   }
 
@@ -32,6 +34,14 @@ export class RoomService {
 
   public async getRoomsUserIsIn(userId: string): Promise<Room[]> {
     return this.roomRepository.findAllParticipating(userId);
+  }
+
+  public async leaveRoom(args: LeaveRoomArgs): Promise<Room> {
+    return this.roomRepository.removeParticipant(args.roomId, [args.userId]);
+  }
+
+  public async endRoom(roomId: string): Promise<void> {
+    return this.roomRepository.deleteRoom(roomId);
   }
 }
 

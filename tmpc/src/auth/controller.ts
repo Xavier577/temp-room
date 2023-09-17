@@ -81,7 +81,7 @@ export class AuthController {
     );
 
     if (!PASSWORD_IS_CORRECT) {
-      throw new BadException('incorrect password');
+      throw new BadException('Incorrect password');
     }
 
     const token = await this.tokenService.generateAsync({ id: user.id });

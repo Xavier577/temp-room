@@ -160,52 +160,6 @@ export default function CreateRoom() {
           </div>
         </section>
       </main>
-      {/*<div className={'bg-white text-black h-screen flex flex-col'}>*/}
-      {/*  <form*/}
-      {/*    className={'flex flex-col gap-4'}*/}
-      {/*    method={'POST'}*/}
-      {/*    onSubmit={(e) => {*/}
-      {/*      e.preventDefault();*/}
-
-      {/*      tempRoom*/}
-      {/*        .createRoom(accessToken, {*/}
-      {/*          name: formField.roomName,*/}
-      {/*          description: formField.roomDescription,*/}
-      {/*        })*/}
-      {/*        .then((data) => {*/}
-      {/*          // save room to rooms state TODO: create room state*/}
-      {/*          console.log(data);*/}
-
-      {/*          // go to room*/}
-      {/*          router.push(`/room/${data.id}`);*/}
-      {/*        })*/}
-      {/*        .catch((err) => console.error(err));*/}
-      {/*    }}*/}
-      {/*  >*/}
-      {/*    <input*/}
-      {/*      className={'w-max p-2'}*/}
-      {/*      placeholder={'Room Name'}*/}
-      {/*      type={'text'}*/}
-      {/*      name={'roomName'}*/}
-      {/*      value={formField.roomName}*/}
-      {/*      onChange={handleChange}*/}
-      {/*      required={true}*/}
-      {/*    />*/}
-
-      {/*    <input*/}
-      {/*      className={'w-max p-2'}*/}
-      {/*      placeholder={'Description'}*/}
-      {/*      type={'text'}*/}
-      {/*      name={'roomDescription'}*/}
-      {/*      value={formField.roomDescription}*/}
-      {/*      onChange={handleChange}*/}
-      {/*    />*/}
-
-      {/*    <button className={'w-max p-2 bg-black text-white'} type={'submit'}>*/}
-      {/*      Submit*/}
-      {/*    </button>*/}
-      {/*  </form>*/}
-      {/*</div>*/}
     </Protected>
   );
 }
