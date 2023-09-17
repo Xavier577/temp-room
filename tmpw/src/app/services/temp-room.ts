@@ -76,6 +76,16 @@ export class TempRoom {
 
     return res.data;
   }
+
+  public async getRoomsUserIsIn<T = any>(accessToken: string): Promise<T> {
+    const res = await this.httpClient.get<T>('/room/participating', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return res.data;
+  }
 }
 
 const tempRoom = new TempRoom(TempRoomHttpClient);

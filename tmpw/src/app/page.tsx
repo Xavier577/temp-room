@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
 import Protected from '@app/components/protected/protected';
+import Link from 'next/link';
 
 export default function Home() {
   const router = useRouter();
@@ -31,22 +32,24 @@ export default function Home() {
             </div>
 
             <div className={'w-[50%] flex justify-between font-sans'}>
-              <button
-                className={
-                  'w-[100px] h-[50px] bg-[#C9F8A9] text-[14px] text-[#110F0F]'
-                }
-                onClick={() => router.push('/room/create')}
-              >
-                Create Room
-              </button>
-              <button
-                className={
-                  'w-[100px] h-[50px] bg-[#1E1E1E] text-[14px] text-[#C9F8A9]'
-                }
-                onClick={() => router.push('/room')}
-              >
-                Join Room
-              </button>
+              <Link href={'/room/create'}>
+                <button
+                  className={
+                    'w-[100px] h-[50px] bg-[#C9F8A9] text-[14px] text-[#110F0F] cursor-pointer'
+                  }
+                >
+                  Create Room
+                </button>
+              </Link>
+              <Link href={'/room'}>
+                <button
+                  className={
+                    'w-[100px] h-[50px] bg-[#1E1E1E] text-[14px] text-[#C9F8A9] cursor-pointer'
+                  }
+                >
+                  Join Room
+                </button>
+              </Link>
             </div>
           </div>
         </section>

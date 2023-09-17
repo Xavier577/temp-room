@@ -84,7 +84,7 @@ export class AuthController {
       throw new BadException('Incorrect password');
     }
 
-    const token = await this.tokenService.generateAsync({ id: user.id });
+    const token = await this.tokenService.generateAsync({ id: user.id }, '14d');
 
     res.status(200).json({ token });
   };
