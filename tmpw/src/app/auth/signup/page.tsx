@@ -2,20 +2,24 @@
 
 import useForm, { DataCollectionElement } from '@app/hooks/use-form';
 import useAppStore from '@app/store/index';
-import tempRoom from '@app/services/temp-room';
 import { useRouter } from 'next/navigation';
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
 import Link from 'next/link';
-import { signFormValidator } from '@app/auth/signin/validators/signin-form.validator';
-import { SignInMode } from '@app/enums/sigin-mode';
 import { ChangeEventHandler, FormEvent, useState } from 'react';
-import Hide from '@app/components/icons/hide';
-import Show from '@app/components/icons/show';
-import { AxiosError } from 'axios';
+import { Button } from '@app/components/button';
+import { FormInput } from '@app/components/form/form-input';
+import { PasswordFormInput } from '@app/components/form/password-input';
 
 export default function SignUp() {
-  const [formValue, handleChange] = useForm({ identifier: '', password: '' });
+  const [formValue, handleChange] = useForm({
+    firstName: '',
+    lastName: '',
+    email: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const updateAccessToken = useAppStore((state) => state.updateAccessToken);
 
@@ -23,73 +27,70 @@ export default function SignUp() {
 
   const [validationError, setValidationError] = useState<any>(undefined);
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const [loginError, setLoginError] = useState<any>(undefined);
+  const [signUpErr, setSignUpErr] = useState<any>(undefined);
 
   const onChangeHandler: ChangeEventHandler<DataCollectionElement> = (
     event,
   ) => {
     handleChange(event);
     setValidationError(undefined);
-    setLoginError(undefined);
+    setSignUpErr(undefined);
   };
 
   const submitForm = (e: FormEvent) => {
     e.preventDefault();
-
-    let signInMode: SignInMode = SignInMode.USERNAME;
-
-    const IS_TYPING_EMAIL = /@/gi.test(formValue.identifier);
-
-    if (IS_TYPING_EMAIL) {
-      signInMode = SignInMode.EMAIL;
-    }
-
-    const data = {
-      mode: signInMode,
-      identifier: formValue.identifier,
-      password: formValue.password,
-    };
-
-    const validationResult = signFormValidator.validate(data);
-
-    const validationErrors: any = {};
-
-    if (validationResult.error != null) {
-      for (const errDetails of validationResult.error.details) {
-        if (errDetails.context?.key != null) {
-          validationErrors[errDetails.context?.key] = {
-            message: errDetails.context?.label,
-          };
-        }
-      }
-
-      setValidationError(validationErrors);
-    } else {
-      tempRoom
-        .login({
-          mode: signInMode,
-          username: formValue.identifier,
-          password: formValue.password,
-        })
-        .then((result) => {
-          // store token
-          updateAccessToken(result.token);
-
-          // go to homepage
-          router.push('/');
-        })
-        .catch((error) => {
-          if (error instanceof AxiosError) {
-            if (error.response?.status === 400) {
-              setLoginError({
-                message: error.response.data,
-              });
-            }
-          }
-        });
-    }
+    // let signInMode: SignInMode = SignInMode.USERNAME;
+    //
+    // const IS_TYPING_EMAIL = /@/gi.test(formValue.identifier);
+    //
+    // if (IS_TYPING_EMAIL) {
+    //   signInMode = SignInMode.EMAIL;
+    // }
+    //
+    // const data = {
+    //   mode: signInMode,
+    //   identifier: formValue.identifier,
+    //   password: formValue.password,
+    // };
+    //
+    // const validationResult = signFormValidator.validate(data);
+    //
+    // const validationErrors: any = {};
+    //
+    // if (validationResult.error != null) {
+    //   for (const errDetails of validationResult.error.details) {
+    //     if (errDetails.context?.key != null) {
+    //       validationErrors[errDetails.context?.key] = {
+    //         message: errDetails.context?.label,
+    //       };
+    //     }
+    //   }
+    //
+    //   setValidationError(validationErrors);
+    // } else {
+    //   tempRoom
+    //     .login({
+    //       mode: signInMode,
+    //       username: formValue.identifier,
+    //       password: formValue.password,
+    //     })
+    //     .then((result) => {
+    //       // store token
+    //       updateAccessToken(result.token);
+    //
+    //       // go to homepage
+    //       router.push('/');
+    //     })
+    //     .catch((error) => {
+    //       if (error instanceof AxiosError) {
+    //         if (error.response?.status === 400) {
+    //           setLoginError({
+    //             message: error.response.data,
+    //           });
+    //         }
+    //       }
+    //     });
+    // }
   };
 
   return (
@@ -105,9 +106,9 @@ export default function SignUp() {
         <div
           className={`
           w-[55%] 
-          min-w-[370px] 
+          min-w-[570px] 
           max-w-[730px]
-          h-[55%] 
+          h-[75%] 
           bg-[#110F0F] 
           flex 
           flex-col 
@@ -119,7 +120,7 @@ export default function SignUp() {
           `}
         >
           <div>
-            <h1 className={'text-[#C9F8A9] text-[32px] font-sans'}>Sign in</h1>
+            <h1 className={'text-[#C9F8A9] text-[32px] font-sans'}>Sign Up</h1>
           </div>
 
           <form
@@ -127,7 +128,7 @@ export default function SignUp() {
                 flex 
                 flex-col 
                 w-[80%] 
-                h-[70%] 
+                h-[90%] 
                 items-center 
                 justify-center 
                 gap-[35px]
@@ -135,127 +136,149 @@ export default function SignUp() {
             method={'POST'}
             onSubmit={submitForm}
           >
-            <div className={'w-[80%] h-max flex flex-col'}>
-              {loginError != null ? (
-                <span className={'text-red-400 py-3'}>
-                  {loginError.message}
-                </span>
-              ) : null}
+            {signUpErr != null ? (
+              <span className={'text-red-400 translate-y-[8px]'}>
+                {signUpErr.message}
+              </span>
+            ) : null}
+            <div className={'w-[80%] h-max flex flex-row justify-between'}>
+              <div className={'w-[47.5%] h-max flex flex-col'}>
+                <FormInput
+                  name={'firstName'}
+                  placeholder={'Firstname (optional)'}
+                  value={formValue.firstName}
+                  type={'text'}
+                  onChange={onChangeHandler}
+                  onFocus={() => {
+                    setSignUpErr(undefined);
+                  }}
+                  required={true}
+                />
 
-              <input
-                className={`
-                  w-full 
-                  h-[70px] 
-                  px-2 
-                  bg-transparent 
-                  border 
-                  border-solid 
-                  text-[#AAE980] 
-                  ${
-                    validationError?.identifier
-                      ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                      : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
-                  } 
-                  focus:outline-none 
-                  placeholder-[rgba(201,248,169,0.67)]
-                  `}
-                name={'identifier'}
-                placeholder={'Username/Email'}
-                type={'text'}
-                value={formValue.identifier}
+                {validationError?.firstName != null ? (
+                  <p className={'text-red-400'}>
+                    {validationError.firstName.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className={'w-[47.5%] h-max flex flex-col'}>
+                <FormInput
+                  name={'lastName'}
+                  placeholder={'Lastname (optional)'}
+                  value={formValue.lastName}
+                  type={'text'}
+                  onChange={onChangeHandler}
+                  onFocus={() => {
+                    setSignUpErr(undefined);
+                  }}
+                  required={true}
+                />
+
+                {validationError?.lastName != null ? (
+                  <p className={'text-red-400'}>
+                    {validationError.lastName.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={'w-[80%] h-max flex flex-col'}>
+              <FormInput
+                name={'email'}
+                placeholder={'Email'}
+                value={formValue.email}
+                type={'email'}
                 onChange={onChangeHandler}
                 onFocus={() => {
-                  setLoginError(undefined);
+                  setSignUpErr(undefined);
                 }}
+                required={true}
               />
-              {validationError?.identifier != null ? (
+
+              {validationError?.email != null ? (
                 <p className={'text-red-400'}>
-                  {validationError.identifier.message}
+                  {validationError.email.message}
                 </p>
               ) : null}
             </div>
 
             <div className={'w-[80%] h-max flex flex-col'}>
-              <div
-                tabIndex={0}
-                className={`
-                    flex
-                    items-center
-                    justify-between
-                    w-full 
-                    h-[70px] 
-                    bg-transparent 
-                    border 
-                    border-solid 
-                    text-[#AAE980] 
-                    ${
-                      validationError?.password
-                        ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                        : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
-                    } 
-                    focus:outline-none 
-              `}
-              >
-                <input
-                  className={`
-                  w-[90%]
-                  h-[70px] 
-                  px-2 
-                  bg-transparent 
-                  border 
-                  border-solid 
-                  border-r-0
-                  border-transparent
-                  text-[#AAE980] 
-                  focus:outline-none 
-                  placeholder-[rgba(201,248,169,0.67)] 
-                  `}
+              <FormInput
+                name={'username'}
+                placeholder={'Username'}
+                value={formValue.username}
+                type={'text'}
+                onChange={onChangeHandler}
+                onFocus={() => {
+                  setSignUpErr(undefined);
+                }}
+                validationErr={validationError?.username != null}
+              />
+
+              {validationError?.username != null ? (
+                <p className={'text-red-400'}>
+                  {validationError.username.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className={'w-[80%] h-max flex flex-row justify-between'}>
+              <div className={'w-[47.5%] h-max flex flex-col'}>
+                <PasswordFormInput
+                  width={'full'}
                   name={'password'}
                   placeholder={'Password'}
-                  type={showPassword ? 'text' : 'password'}
                   value={formValue.password}
                   onChange={onChangeHandler}
                   onFocus={() => {
-                    setLoginError(undefined);
+                    setSignUpErr(undefined);
                   }}
+                  validationErr={validationError?.password != null}
                 />
 
-                <span
-                  className={'mr-[2%]'}
-                  onClick={() => {
-                    setShowPassword((currentState) => !currentState);
-                  }}
-                >
-                  {showPassword ? <Hide /> : <Show />}
-                </span>
+                {validationError?.password != null ? (
+                  <p className={'text-red-400'}>
+                    {validationError.password.message}
+                  </p>
+                ) : null}
               </div>
 
-              {validationError?.password != null ? (
-                <p className={'text-red-400'}>
-                  {validationError.password.message}
-                </p>
-              ) : null}
+              <div className={'w-[47.5%] h-max flex flex-col'}>
+                <PasswordFormInput
+                  width={'full'}
+                  name={'confirmPassword'}
+                  placeholder={'Confirm Password'}
+                  value={formValue.confirmPassword}
+                  onChange={onChangeHandler}
+                  onFocus={() => {
+                    setSignUpErr(undefined);
+                  }}
+                  validationErr={validationError?.confirmPassword != null}
+                />
+
+                {validationError?.confirmPassword != null ? (
+                  <p className={'text-red-400'}>
+                    {validationError.confirmPassword.message}
+                  </p>
+                ) : null}
+              </div>
             </div>
 
-            <div className={'flex flex-row w-[80%]  justify-between items-end'}>
+            <div className={'flex flex-row w-[80%] justify-between items-end'}>
               <p>
-                {"Don't have an account?"}{' '}
+                <span className={'text-[#696B68] font-[16px] font-sans'}>
+                  {'Have an account already?'}{' '}
+                </span>
                 <Link
-                  href={'/auth/signup'}
+                  href={'/auth/signin'}
                   className={'text-[#C9F8A9] font-[16px]'}
                 >
-                  Sign up
+                  Sign in
                 </Link>
               </p>
 
-              <button
-                className={
-                  'w-[100px] h-[50px] bg-[#C9F8A9] text-[14px] text-[#110F0F]'
-                }
-                type={'submit'}
-              >
-                Sign in
-              </button>
+              <Button text={'Sign up'} type={'submit'} />
             </div>
           </form>
         </div>

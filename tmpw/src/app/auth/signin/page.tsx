@@ -13,6 +13,8 @@ import { ChangeEventHandler, FormEvent, useState } from 'react';
 import Hide from '@app/components/icons/hide';
 import Show from '@app/components/icons/show';
 import { AxiosError } from 'axios';
+import { FormInput } from '@app/components/form/form-input';
+import { PasswordFormInput } from '@app/components/form/password-input';
 
 export default function SignIn() {
   const [formValue, handleChange] = useForm({ identifier: '', password: '' });
@@ -105,7 +107,7 @@ export default function SignIn() {
         <div
           className={`
           w-[55%] 
-          min-w-[370px] 
+          min-w-[570px] 
           max-w-[730px]
           h-[55%] 
           bg-[#110F0F] 
@@ -135,30 +137,13 @@ export default function SignIn() {
             method={'POST'}
             onSubmit={submitForm}
           >
+            {loginError != null ? (
+              <span className={'text-red-400 translate-y-[8px]'}>
+                {loginError.message}
+              </span>
+            ) : null}
             <div className={'w-[80%] h-max flex flex-col'}>
-              {loginError != null ? (
-                <span className={'text-red-400 py-3'}>
-                  {loginError.message}
-                </span>
-              ) : null}
-
-              <input
-                className={`
-                  w-full 
-                  h-[70px] 
-                  px-2 
-                  bg-transparent 
-                  border 
-                  border-solid 
-                  text-[#AAE980] 
-                  ${
-                    validationError?.identifier
-                      ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                      : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
-                  } 
-                  focus:outline-none 
-                  placeholder-[rgba(201,248,169,0.67)]
-                  `}
+              <FormInput
                 name={'identifier'}
                 placeholder={'Username/Email'}
                 type={'text'}
@@ -167,7 +152,9 @@ export default function SignIn() {
                 onFocus={() => {
                   setLoginError(undefined);
                 }}
+                validationErr={validationError?.identifier != null}
               />
+
               {validationError?.identifier != null ? (
                 <p className={'text-red-400'}>
                   {validationError.identifier.message}
@@ -176,59 +163,16 @@ export default function SignIn() {
             </div>
 
             <div className={'w-[80%] h-max flex flex-col'}>
-              <div
-                tabIndex={0}
-                className={`
-                    flex
-                    items-center
-                    justify-between
-                    w-full 
-                    h-[70px] 
-                    bg-transparent 
-                    border 
-                    border-solid 
-                    text-[#AAE980] 
-                    ${
-                      validationError?.password
-                        ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                        : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
-                    } 
-                    focus:outline-none 
-              `}
-              >
-                <input
-                  className={`
-                  w-[90%]
-                  h-[70px] 
-                  px-2 
-                  bg-transparent 
-                  border 
-                  border-solid 
-                  border-r-0
-                  border-transparent
-                  text-[#AAE980] 
-                  focus:outline-none 
-                  placeholder-[rgba(201,248,169,0.67)] 
-                  `}
-                  name={'password'}
-                  placeholder={'Password'}
-                  type={showPassword ? 'text' : 'password'}
-                  value={formValue.password}
-                  onChange={onChangeHandler}
-                  onFocus={() => {
-                    setLoginError(undefined);
-                  }}
-                />
-
-                <span
-                  className={'mr-[2%]'}
-                  onClick={() => {
-                    setShowPassword((currentState) => !currentState);
-                  }}
-                >
-                  {showPassword ? <Hide /> : <Show />}
-                </span>
-              </div>
+              <PasswordFormInput
+                name={'password'}
+                placeholder={'Password'}
+                value={formValue.password}
+                onChange={onChangeHandler}
+                onFocus={() => {
+                  setLoginError(undefined);
+                }}
+                validationErr={validationError?.password != null}
+              />
 
               {validationError?.password != null ? (
                 <p className={'text-red-400'}>
@@ -239,10 +183,12 @@ export default function SignIn() {
 
             <div className={'flex flex-row w-[80%]  justify-between items-end'}>
               <p>
-                {"Don't have an account?"}{' '}
+                <span className={'text-[#696B68] font-[16px] font-sans'}>
+                  {"Don't have an account?"}{' '}
+                </span>
                 <Link
                   href={'/auth/signup'}
-                  className={'text-[#C9F8A9] font-[16px]'}
+                  className={'text-[#C9F8A9] font-[16px] font-sans'}
                 >
                   Sign up
                 </Link>
