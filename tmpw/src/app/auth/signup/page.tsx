@@ -39,58 +39,6 @@ export default function SignUp() {
 
   const submitForm = (e: FormEvent) => {
     e.preventDefault();
-    // let signInMode: SignInMode = SignInMode.USERNAME;
-    //
-    // const IS_TYPING_EMAIL = /@/gi.test(formValue.identifier);
-    //
-    // if (IS_TYPING_EMAIL) {
-    //   signInMode = SignInMode.EMAIL;
-    // }
-    //
-    // const data = {
-    //   mode: signInMode,
-    //   identifier: formValue.identifier,
-    //   password: formValue.password,
-    // };
-    //
-    // const validationResult = signFormValidator.validate(data);
-    //
-    // const validationErrors: any = {};
-    //
-    // if (validationResult.error != null) {
-    //   for (const errDetails of validationResult.error.details) {
-    //     if (errDetails.context?.key != null) {
-    //       validationErrors[errDetails.context?.key] = {
-    //         message: errDetails.context?.label,
-    //       };
-    //     }
-    //   }
-    //
-    //   setValidationError(validationErrors);
-    // } else {
-    //   tempRoom
-    //     .login({
-    //       mode: signInMode,
-    //       username: formValue.identifier,
-    //       password: formValue.password,
-    //     })
-    //     .then((result) => {
-    //       // store token
-    //       updateAccessToken(result.token);
-    //
-    //       // go to homepage
-    //       router.push('/');
-    //     })
-    //     .catch((error) => {
-    //       if (error instanceof AxiosError) {
-    //         if (error.response?.status === 400) {
-    //           setLoginError({
-    //             message: error.response.data,
-    //           });
-    //         }
-    //       }
-    //     });
-    // }
   };
 
   return (
@@ -128,7 +76,8 @@ export default function SignUp() {
                 flex 
                 flex-col 
                 w-[80%] 
-                h-[90%] 
+                h-[90%]
+                min-h-[500px] 
                 items-center 
                 justify-center 
                 gap-[35px]

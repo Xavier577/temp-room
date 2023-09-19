@@ -130,6 +130,7 @@ export default function SignIn() {
                 flex-col 
                 w-[80%] 
                 h-[70%] 
+                min-h-[300px]
                 items-center 
                 justify-center 
                 gap-[35px]
