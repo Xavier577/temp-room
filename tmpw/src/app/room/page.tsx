@@ -9,10 +9,16 @@ import useAppStore from '@app/store';
 import Protected from '@app/components/protected/protected';
 import Link from 'next/link';
 
+const isUserHost = (room: any, userId: string) => {
+  return room?.hostId === userId;
+};
+
 export default function Lobby() {
   const getAccessToken = useAppStore((state) => state.getAccessToken);
 
   const accessToken = getAccessToken();
+
+  const user = useAppStore((state) => state.user);
 
   const [roomsUserIsin, setRoomsUserIsin] = useState<{ [name: string]: any }[]>(
     [],
@@ -112,7 +118,7 @@ export default function Lobby() {
 
             <div
               className={
-                'w-[64%]  max-h-[325px] border border-solid border-[#1E1E1E] overflow-y-scroll'
+                'w-[64%] min-w-[420px] max-h-[325px] border border-solid border-[#1E1E1E] overflow-y-scroll'
               }
             >
               <div
@@ -132,12 +138,24 @@ export default function Lobby() {
                         key={idx}
                       >
                         <Room />
-                        <div className={`flex flex-col`}>
-                          <span
-                            className={'text-[#AAE980] text-[16px] font-sans'}
+                        <div className={`flex flex-col w-full`}>
+                          <div
+                            className={`flex flex-row w-full justify-between`}
                           >
-                            {room?.name}
-                          </span>
+                            <span
+                              className={'text-[#AAE980] text-[16px] font-sans'}
+                            >
+                              {room?.name}{' '}
+                            </span>
+
+                            {isUserHost(room, user!.id) ? (
+                              <span
+                                className={`text-[#C9F8A9] text-[14px] font-sans`}
+                              >
+                                (you are host)
+                              </span>
+                            ) : null}
+                          </div>
                           <span
                             className={'text-[#56644C] text-[13px] font-sans'}
                           >

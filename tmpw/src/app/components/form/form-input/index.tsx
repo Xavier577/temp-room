@@ -15,6 +15,10 @@ export type FormInputProps = {
   height?: string | number;
   type?: HTMLInputTypeAttribute;
   required?: boolean;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderHoverColor?: string;
+  borderFocusColor?: string;
 };
 export const FormInput = ({
   name,
@@ -26,6 +30,10 @@ export const FormInput = ({
   width = 'full',
   height = '70px',
   type = 'text',
+  backgroundColor = 'transparent',
+  borderColor = '#56644C',
+  borderHoverColor = '#AAE980',
+  borderFocusColor = '#AAE980',
   required = false,
 }: FormInputProps) => {
   return (
@@ -34,14 +42,14 @@ export const FormInput = ({
                   w-${width}
                   h-[${height}] 
                   px-2 
-                  bg-transparent 
+                  bg-${backgroundColor}
                   border 
                   border-solid 
                   text-[#AAE980] 
                   ${
                     validationErr
                       ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                      : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
+                      : `border-[${borderColor}] hover:border-[${borderHoverColor}] focus:border-[${borderFocusColor}]`
                   } 
                   focus:outline-none 
                   placeholder-[rgba(201,248,169,0.67)]
