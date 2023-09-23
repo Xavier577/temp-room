@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <Protected>
-      <main className="flex flex-col h-screen bg-[#110F0F]">
+      <main className={'flex flex-col h-screen bg-[#110F0F]'}>
         <header className={'flex flex-row justify-between p-10 w-full'}>
           <AppLogo />
           <UserIcon />
