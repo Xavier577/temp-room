@@ -92,7 +92,7 @@ export class ChatWebsocketHandler {
     this.logger.log('BROADCASTING_MESSAGE');
 
     broadcast(msg, {
-      includeSelf: false,
+      includeSelf: true,
       shouldBroadcastOnlyIf: (client) => {
         const userId = <string>(client as any).user?.id;
         return room.participants.some((r) => r.id === userId);

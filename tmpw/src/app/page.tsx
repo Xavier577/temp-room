@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
-import Protected from '@app/components/protected/protected';
+import Protected from '@app/components/protected';
 import Link from 'next/link';
 
 export default function Home() {

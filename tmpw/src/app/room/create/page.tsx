@@ -4,7 +4,7 @@ import useForm, { DataCollectionElement } from '@app/hooks/use-form';
 import tempRoom from '@app/services/temp-room';
 import useAppStore from '@app/store/index';
 import { useRouter } from 'next/navigation';
-import Protected from '@app/components/protected/protected';
+import Protected from '@app/components/protected';
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
 import { ChangeEventHandler, FormEvent } from 'react';

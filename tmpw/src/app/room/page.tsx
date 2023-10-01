@@ -6,7 +6,7 @@ import Room from '@app/components/icons/room';
 import { useEffect, useState } from 'react';
 import tempRoom from '@app/services/temp-room';
 import useAppStore from '@app/store';
-import Protected from '@app/components/protected/protected';
+import Protected from '@app/components/protected';
 import Link from 'next/link';
 
 const isUserHost = (room: any, userId: string) => {
