@@ -22,6 +22,7 @@ async function main() {
     cors({
       origin: '*',
       methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS', 'PATCH'],
+      allowedHeaders: '*',
     }),
   ); // allow any origin for now
   app.use(express.json());
