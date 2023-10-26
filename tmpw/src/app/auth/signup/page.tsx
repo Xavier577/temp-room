@@ -10,9 +10,21 @@ import { ChangeEventHandler, FormEvent, useState } from 'react';
 import { Button } from '@app/components/button';
 import { FormInput } from '@app/components/form/form-input';
 import { PasswordFormInput } from '@app/components/form/password-input';
+import { signupFormValidator } from '@app/auth/signup/validators/signup-form.validator';
+import tempRoom, { SignupPayload } from '@app/services/temp-room';
+import { AxiosError } from 'axios';
+
+export type SignUpFields = {
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function SignUp() {
-  const [formValue, handleChange] = useForm({
+  const [formValue, handleChange] = useForm<SignUpFields>({
     firstName: '',
     lastName: '',
     email: '',
@@ -39,12 +51,56 @@ export default function SignUp() {
 
   const submitForm = (e: FormEvent) => {
     e.preventDefault();
+
+    const validationResult = signupFormValidator.validate(formValue);
+
+    const validationErrors: any = {};
+
+    if (validationResult.error != null) {
+      for (const errDetails of validationResult.error.details) {
+        if (errDetails.context?.key != null) {
+          validationErrors[errDetails.context?.key] = {
+            message: errDetails.context?.label,
+          };
+        }
+      }
+
+      setValidationError(validationErrors);
+    } else {
+      const signUpPayload: SignupPayload = {
+        email: formValue.email,
+        firstName: formValue.firstName,
+        lastName: formValue.lastName,
+        password: formValue.password,
+        username: formValue.username,
+      };
+
+      tempRoom
+        .signUp(signUpPayload)
+        .then((result) => {
+          // store token
+          updateAccessToken(result.token);
+          // go to homepage
+          router.push('/');
+        })
+        .catch((error) => {
+          if (error instanceof AxiosError) {
+            if (error.response?.status === 400) {
+              setSignUpErr({
+                message: error.response.data,
+              });
+            }
+          }
+        });
+    }
   };
 
   return (
     <main className="flex flex-col h-screen bg-[#110F0F]">
       <header className={'flex flex-row justify-between p-10 w-full'}>
-        <AppLogo />
+        <Link href={'/'}>
+          <AppLogo />
+        </Link>
         <UserIcon />
       </header>
 
@@ -101,7 +157,6 @@ export default function SignUp() {
                   onFocus={() => {
                     setSignUpErr(undefined);
                   }}
-                  required={true}
                 />
 
                 {validationError?.firstName != null ? (
@@ -121,7 +176,6 @@ export default function SignUp() {
                   onFocus={() => {
                     setSignUpErr(undefined);
                   }}
-                  required={true}
                 />
 
                 {validationError?.lastName != null ? (
@@ -142,7 +196,7 @@ export default function SignUp() {
                 onFocus={() => {
                   setSignUpErr(undefined);
                 }}
-                required={true}
+                validationErr={validationError?.email != null}
               />
 
               {validationError?.email != null ? (

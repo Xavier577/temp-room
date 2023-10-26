@@ -13,6 +13,7 @@ import { ChangeEventHandler, FormEvent, useState } from 'react';
 import { AxiosError } from 'axios';
 import { FormInput } from '@app/components/form/form-input';
 import { PasswordFormInput } from '@app/components/form/password-input';
+import { Button } from '@app/components/button';
 
 export default function SignIn() {
   const [formValue, handleChange] = useForm({ identifier: '', password: '' });
@@ -22,8 +23,6 @@ export default function SignIn() {
   const router = useRouter();
 
   const [validationError, setValidationError] = useState<any>(undefined);
-
-  const [showPassword, setShowPassword] = useState(false);
 
   const [loginError, setLoginError] = useState<any>(undefined);
 
@@ -104,7 +103,9 @@ export default function SignIn() {
   return (
     <main className="flex flex-col h-screen bg-[#110F0F]">
       <header className={'flex flex-row justify-between p-10 w-full'}>
-        <AppLogo />
+        <Link href={'/'}>
+          <AppLogo />
+        </Link>
         <UserIcon />
       </header>
 
@@ -202,14 +203,7 @@ export default function SignIn() {
                 </Link>
               </p>
 
-              <button
-                className={
-                  'w-[100px] h-[50px] bg-[#C9F8A9] text-[14px] text-[#110F0F]'
-                }
-                type={'submit'}
-              >
-                Sign in
-              </button>
+              <Button type={'submit'} text={'Sign in'} />
             </div>
           </form>
         </div>

@@ -7,9 +7,9 @@ export const signupPayloadValidatorSchema = Joi.object({
     .pattern(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
     .required(),
 
-  firstName: Joi.string().optional(),
+  firstName: Joi.string().allow('').optional(),
 
-  lastName: Joi.string().optional(),
+  lastName: Joi.string().allow('').optional(),
 
   password: Joi.string().required(),
 }).unknown();

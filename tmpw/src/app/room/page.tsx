@@ -11,6 +11,7 @@ import { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { ParticipantsRoom } from '@app/room/components/participants-room';
 import { useError } from '@app/hooks/use-error';
+import Link from 'next/link';
 
 export default function Lobby() {
   const router = useRouter();
@@ -78,7 +79,9 @@ export default function Lobby() {
     <Protected>
       <main className="flex flex-col h-screen bg-[#110F0F]">
         <header className={'flex flex-row justify-between p-10 w-full'}>
-          <AppLogo />
+          <Link href={'/'}>
+            <AppLogo />
+          </Link>
           <UserIcon />
         </header>
 

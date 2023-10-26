@@ -44,8 +44,8 @@ export class AuthController {
       email: payload.email,
       username: payload.username,
       password: hashedPassword,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
+      firstName: payload.firstName || undefined,
+      lastName: payload.lastName || undefined,
     });
 
     const serializedUser = Exclude(user, ['password']);
