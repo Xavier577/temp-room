@@ -69,36 +69,64 @@ export class ChatWebsocketHandler {
       );
     }
 
-    const savedMsg = await this.chatService.addMsgToRoomChat({
+    let sentMsg = await this.chatService.addMsgToRoomChat({
       text: payload.data.message,
       roomId: room.id,
       senderId: user.id,
     });
 
-    // broadcast user's message
-    const msg = new WsMessage<
+    // broadcast user's message to others in room
+    const msgToOthers = new WsMessage<
       Omit<Message, 'roomId' | 'delivered'> & { senderUsername: string }
     >({
       data: {
-        id: savedMsg.id,
-        text: savedMsg.text,
-        senderId: savedMsg.senderId,
+        id: sentMsg.id,
+        text: sentMsg.text,
+        senderId: sentMsg.senderId,
         senderUsername: user.username,
-        sentAt: savedMsg.sentAt,
+        sentAt: sentMsg.sentAt,
       },
       event: payload.event,
     }).stringify();
 
     this.logger.log('BROADCASTING_MESSAGE');
 
-    broadcast(msg, {
-      includeSelf: true,
+    broadcast(msgToOthers, {
+      includeSelf: false,
       shouldBroadcastOnlyIf: (client) => {
         const userId = <string>(client as any).user?.id;
+        if (user?.id === user.id) return false;
         return room.participants.some((r) => r.id === userId);
       },
       afterBroadcast: async () => {
-        await this.chatService.updateDeliveredStatus(savedMsg.id, true);
+        sentMsg = await this.chatService.updateDeliveredStatus(
+          sentMsg.id,
+          true,
+        );
+      },
+    });
+
+    // broadcast user's message to self
+    const msgToSelf = new WsMessage<
+      Omit<Message, 'roomId'> & { senderUsername: string }
+    >({
+      event: payload.event,
+      data: {
+        id: sentMsg.id,
+        text: sentMsg.text,
+        senderId: sentMsg.senderId,
+        senderUsername: user.username,
+        sentAt: sentMsg.sentAt,
+        delivered: sentMsg.delivered,
+      },
+    }).stringify();
+
+    broadcast(msgToSelf, {
+      includeSelf: true,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+        if (user?.id !== user.id) return false;
+        return room.participants.some((r) => r.id === userId);
       },
     });
   };

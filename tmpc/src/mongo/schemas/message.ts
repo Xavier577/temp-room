@@ -27,7 +27,7 @@ export const messageSchema = new mongoose.Schema<Message>(
     },
     sentAt: {
       type: Date,
-      default: new Date(),
+      default: Date.now,
     },
   },
   { timestamps: true },

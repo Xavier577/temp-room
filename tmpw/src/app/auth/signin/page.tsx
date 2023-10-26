@@ -10,8 +10,6 @@ import Link from 'next/link';
 import { signFormValidator } from '@app/auth/signin/validators/signin-form.validator';
 import { SignInMode } from '@app/enums/sigin-mode';
 import { ChangeEventHandler, FormEvent, useState } from 'react';
-import Hide from '@app/components/icons/hide';
-import Show from '@app/components/icons/show';
 import { AxiosError } from 'axios';
 import { FormInput } from '@app/components/form/form-input';
 import { PasswordFormInput } from '@app/components/form/password-input';
@@ -69,12 +67,21 @@ export default function SignIn() {
 
       setValidationError(validationErrors);
     } else {
+      const loginPayload =
+        signInMode === SignInMode.USERNAME
+          ? {
+              mode: signInMode,
+              username: formValue.identifier,
+              password: formValue.password,
+            }
+          : {
+              mode: signInMode,
+              email: formValue.identifier,
+              password: formValue.password,
+            };
+
       tempRoom
-        .login({
-          mode: signInMode,
-          username: formValue.identifier,
-          password: formValue.password,
-        })
+        .login(loginPayload)
         .then((result) => {
           // store token
           updateAccessToken(result.token);

@@ -1,7 +1,7 @@
 import axios, { Axios } from 'axios';
 
 const TempRoomHttpClient = axios.create({
-  baseURL: 'http://localhost:9000/api/v1',
+  baseURL: process.env.tempRoomBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,7 +9,8 @@ const TempRoomHttpClient = axios.create({
 
 export type LoginPayload = {
   mode: string;
-  username: string;
+  email?: string;
+  username?: string;
   password: string;
 };
 
@@ -64,15 +65,8 @@ export class TempRoom {
     return res.data;
   }
 
-  public async fetchRoom<T = any>(
-    accessToken: string,
-    roomId: string,
-  ): Promise<T> {
-    const res = await this.httpClient.get<T>(`/room/${roomId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+  public async fetchRoom<T = any>(roomId: string): Promise<T> {
+    const res = await this.httpClient.get<T>(`/room/${roomId}`);
 
     return res.data;
   }

@@ -81,28 +81,47 @@ export class RoomWebsocketHandler {
 
     this.logger.log('NEW_PARTICIPANT_JOINED_GROUP');
 
-    const msg = new WsMessage<any>({
-      data: { message: `${user.username} has joined` },
-      event: payload.event,
-    }).stringify();
-
     this.logger.log('BROADCASTING_TO_ROOM_MEMBERS');
 
     const roomChats = await this.chatService.getAllRoomChat(room.id);
 
-    for (const messages of roomChats) {
+    for (const message of roomChats) {
       const msg = new WsMessage<Message>({
-        data: messages,
-        event: payload.event,
+        data: message,
+        event: 'chat',
       }).stringify();
 
       ws.send(msg);
     }
 
-    broadcast(msg, {
+    const msgToSelf = new WsMessage<any>({
+      data: { message: `you joined ${room.name}` },
+      event: payload.event,
+    }).stringify();
+
+    broadcast(msgToSelf, {
       includeSelf: true,
       shouldBroadcastOnlyIf: (client) => {
         const userId = <string>(client as any).user?.id;
+
+        if (userId !== user.id) return false;
+
+        return updatedRoom.participants.some((r) => r.id === userId);
+      },
+    });
+
+    const msgToOthers = new WsMessage<any>({
+      data: { message: `${user.username} has joined` },
+      event: payload.event,
+    }).stringify();
+
+    broadcast(msgToOthers, {
+      includeSelf: false,
+      shouldBroadcastOnlyIf: (client) => {
+        const userId = <string>(client as any).user?.id;
+
+        if (userId === user.id) return false;
+
         return updatedRoom.participants.some((r) => r.id === userId);
       },
     });

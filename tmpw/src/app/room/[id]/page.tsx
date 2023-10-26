@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import tempRoom from '@app/services/temp-room';
 import useAppStore from '@app/store/index';
 import { Participant, Room, User } from '@app/store/states';
@@ -10,57 +10,22 @@ import useForm from '@app/hooks/use-form';
 import AppLogo from '@app/components/icons/app-logo';
 import RoomIcon from '@app/components/icons/room';
 import Link from 'next/link';
-import mapReduce from '@app/utils/map-reduce';
-
-export type RoomListProps = {
-  currentRoomId: string;
-  rooms: Map<string, any>;
-};
-
-const RoomList = ({ currentRoomId, rooms }: RoomListProps) => {
-  return mapReduce<JSX.Element[]>(rooms, [], (room, accumulator, key) => {
-    accumulator.push(
-      <Link href={`/room/${room.id}`} key={key}>
-        <div
-          className={`flex flex-row ${
-            currentRoomId === room.id ? 'bg-[#1E1E1E]' : ''
-          } items-center justify-start gap-4 px-5 w-[320px] h-[95px] border border-solid border-[#1E1E1E] cursor-pointer`}
-          key={key}
-        >
-          <RoomIcon />
-          <div className={`flex flex-col w-full`}>
-            <div className={`flex flex-row w-full justify-between`}>
-              <span className={'text-[#AAE980] text-[16px] font-sans'}>
-                {room?.name}{' '}
-              </span>
-            </div>
-            <span className={'text-[#56644C] text-[13px] font-sans'}>
-              {room.description}
-            </span>
-          </div>
-        </div>
-      </Link>,
-    );
-
-    return accumulator;
-  });
-};
+import { useWebsocket } from '@app/hooks/use-websocket';
+import { SendMsg } from '@app/components/icons/send-msg';
+import { ChatSection } from '@app/room/components/chat-section';
+import { RoomList } from '@app/room/components/room-list';
+import Protected from '@app/components/protected';
 
 export type RoomParamProp = {
   params: { id: string };
 };
 
-export default function EnterRoom({ params }: RoomParamProp) {
-  const [ws, setWs] = useState<WebSocket>();
-
+export default function ChatRoom({ params }: RoomParamProp) {
   const getAccessToken = useAppStore((state) => state.getAccessToken);
-
   const appendRoom = useAppStore((state) => state.appendRoom);
-
   const rooms = useAppStore((state) => state.rooms);
 
   const accessToken = getAccessToken();
-
   const user = useAppStore((state) => state.user);
 
   const setUser = useAppStore((state) => state.setUser);
@@ -79,9 +44,30 @@ export default function EnterRoom({ params }: RoomParamProp) {
 
   const [isHost, setIsHost] = useState(false);
 
-  const [textInput, textInputHandler] = useForm({ msg: '' });
+  const [textInput, textInputHandler, resetInputValue] = useForm({ msg: '' });
 
   const [msgStack, setMsgStack] = useState<any[]>([]);
+
+  const sendMsgButtonRef = useRef<HTMLButtonElement>(null);
+
+  const [ws, connectSocket] = useWebsocket({
+    onMessage: (_, event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.error != null) {
+        console.log(msg.error);
+        return;
+      }
+
+      if (msg?.data != null) {
+        setMsgStack((currentState) => [...currentState, msg]);
+      }
+    },
+    onError: (event) => console.error(event),
+    onClose: (event) => {
+      setMsgStack([]);
+      console.log(event);
+    },
+  });
 
   useEffect(() => {
     (async () => {
@@ -108,7 +94,7 @@ export default function EnterRoom({ params }: RoomParamProp) {
       }
 
       try {
-        const roomData = await tempRoom.fetchRoom(accessToken, params.id);
+        const roomData = await tempRoom.fetchRoom(params.id);
 
         appendRoom(
           new Room({
@@ -128,53 +114,9 @@ export default function EnterRoom({ params }: RoomParamProp) {
 
         setIsHost(roomData?.hostId === userData!.id);
 
-        // establish websocket connection
-        const ws = new WebSocket(
-          `ws://127.0.0.1:9000/api/room?ticket=${accessToken}`,
-        );
+        const url = `${process.env.temproomSocketBaseUrl}?ticket=${accessToken}`;
 
-        ws.addEventListener('open', (e) => {
-          setWs(ws);
-
-          if (!PART_OF_ROOM) {
-            ws.send(
-              JSON.stringify({
-                event: 'join_room',
-                data: {
-                  roomId: params.id,
-                },
-              }),
-            );
-          }
-        });
-
-        ws.addEventListener('message', (e) => {
-          const msg = JSON.parse(e.data);
-
-          console.log(msg);
-
-          if (msg.error != null) {
-            console.log(msg.error);
-
-            return;
-          }
-
-          switch (msg.event) {
-            case 'chat':
-              setMsgStack((currState) => {
-                return [...currState, msg];
-              });
-              break;
-          }
-        });
-
-        ws.addEventListener('error', (e) => {
-          console.error(e);
-        });
-
-        ws.addEventListener('close', (e) => {
-          console.log(e);
-        });
+        connectSocket(url);
       } catch (err) {
         console.error(err);
         if (err instanceof AxiosError) {
@@ -193,7 +135,11 @@ export default function EnterRoom({ params }: RoomParamProp) {
         }
       }
     })();
-  }, [accessToken, appendRoom, params.id, router]);
+
+    return () => {
+      setMsgStack([]);
+    };
+  }, []);
 
   useEffect(() => {
     tempRoom
@@ -212,113 +158,140 @@ export default function EnterRoom({ params }: RoomParamProp) {
         }
       })
       .catch((err) => console.error(err));
-  }, [accessToken]);
+  }, []);
 
   return (
-    <main className={'flex flex-row h-screen bg-[#110F0F]'}>
-      {(() => {
-        if (rooms.get(params.id) && isPartOfRoom) {
-          return (
-            <>
-              <div className={'w-max h-full'}>
-                <div
-                  className={
-                    'w-full h-[85px] flex items-center justify-center border border-solid border-[#1E1E1E]'
-                  }
-                >
-                  <AppLogo />
-                </div>
-                <div
-                  className={
-                    'w-full h-[calc(100%-85px)] border border-solid border-[#1E1E1E]'
-                  }
-                >
-                  <RoomList currentRoomId={params.id} rooms={rooms} />
-                </div>
-              </div>
-              <div className={'w-full h-full'}>
-                <div
-                  className={
-                    'w-full h-[85px] flex flex-row items-center justify-start gap-2'
-                  }
-                >
-                  <div className={'w-max h-max pl-5'}>
-                    <RoomIcon />
+    <Protected>
+      <main className={'flex flex-row h-screen bg-[#110F0F]'}>
+        {(() => {
+          if (rooms.get(params.id) && isPartOfRoom) {
+            return (
+              <>
+                <div className={'w-max h-full'}>
+                  <div
+                    className={
+                      'w-full h-[85px] flex items-center justify-center border border-solid border-[#1E1E1E]'
+                    }
+                  >
+                    <Link href={'/'}>
+                      <AppLogo />
+                    </Link>
                   </div>
-                  <div className={`flex flex-col w-max`}>
-                    <div className={`flex flex-row w-full justify-between`}>
-                      <span className={'text-[#AAE980] text-[16px] font-sans'}>
-                        {'Travel talk'}
+                  <div
+                    className={
+                      'w-full h-[calc(100%-85px)] border border-solid border-[#1E1E1E]'
+                    }
+                  >
+                    <RoomList currentRoomId={params.id} rooms={rooms} />
+                  </div>
+                </div>
+                <div className={'w-full h-full'}>
+                  <div
+                    className={
+                      'w-full h-[85px] flex flex-row items-center justify-start gap-2'
+                    }
+                  >
+                    <div className={'w-max h-max pl-5'}>
+                      <RoomIcon />
+                    </div>
+                    <div className={`flex flex-col w-max`}>
+                      <div className={`flex flex-row w-full justify-between`}>
+                        <span
+                          className={'text-[#AAE980] text-[16px] font-sans'}
+                        >
+                          {'Travel talk'}
+                        </span>
+                      </div>
+                      <span className={'text-[#56644C] text-[13px] font-sans'}>
+                        {'3 participant'}
                       </span>
                     </div>
-                    <span className={'text-[#56644C] text-[13px] font-sans'}>
-                      {'3 participant'}
-                    </span>
+                  </div>
+                  <div
+                    className={`
+                  w-[calc(100%-35px)]
+                  max-w-[1500px] 
+                  h-[calc(97%-85px)] 
+                  flex 
+                  flex-col 
+                  items-center 
+                  justify-between 
+                  border 
+                  border-solid 
+                  border-[#1E1E1E]
+                  `}
+                  >
+                    <ChatSection msgStack={msgStack} user={user} socket={ws} />
+
+                    {/* Input box*/}
+                    <section
+                      className={
+                        'w-full h-[100px] flex items-center justify-start gap-2'
+                      }
+                    >
+                      <textarea
+                        className={`
+                      w-[700px] 
+                      ml-1.5 
+                      pt-5
+                      pl-10
+                      resize-none
+                      text-[#AAE980] 
+                      bg-[#1E1E1E]
+                      border
+                      border-solid 
+                      border-[#56644C] 
+                      hover:border-[#AAE980] 
+                      focus:border-[#AAE980]
+                      focus:outline-none 
+                      placeholder-[#56644C]
+                      `}
+                        placeholder={'Type a Message...'}
+                        name={'msg'}
+                        value={textInput.msg}
+                        onChange={textInputHandler}
+                        onKeyDown={(e) => {
+                          if (e.code === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMsgButtonRef?.current?.click();
+                          }
+                        }}
+                      ></textarea>
+
+                      <button
+                        ref={sendMsgButtonRef}
+                        onClick={(e) => {
+                          if (textInput?.msg?.trim?.() != '' && ws != null) {
+                            const msg = JSON.stringify({
+                              event: 'chat',
+                              data: {
+                                message: textInput.msg,
+                                roomId: rooms.get(params.id)?.id,
+                              },
+                            });
+                            ws.send(msg);
+                            resetInputValue('msg');
+                          }
+                        }}
+                      >
+                        <SendMsg />
+                      </button>
+                    </section>
                   </div>
                 </div>
-                <div
-                  className={
-                    'w-[calc(100%-35px)] h-[calc(97%-85px)] flex flex-col items-center justify-start border border-solid border-[#1E1E1E]'
-                  }
-                >
-                  {/*   Message section */}
+              </>
+            );
+          }
 
-                  <textarea
-                    className={'bg-white text-blue-950 w-[200px]'}
-                    name={'msg'}
-                    value={textInput.msg}
-                    onChange={textInputHandler}
-                  ></textarea>
+          if (roomNotFound || invalidId) {
+            return <p>{errMsg}</p>;
+          }
 
-                  <button
-                    className={
-                      'bg-teal-400 text-blue-950 border-none w-max p-1.5 font-mono'
-                    }
-                    onClick={(e) => {
-                      if (textInput.msg != '') {
-                        // send message to socket*/}
-                        const msg = JSON.stringify({
-                          event: 'chat',
-                          data: {
-                            message: textInput.msg,
-                            roomId: rooms.get(params.id)?.id,
-                          },
-                        });
-
-                        ws?.send(msg);
-                      }
-                    }}
-                  >
-                    Send
-                  </button>
-
-                  {ws != null &&
-                    msgStack?.map((msg, idx) => {
-                      const TextComponent = (props: { key: any }) => (
-                        <div key={props.key}>
-                          <pre>senderUsername: {msg?.data?.senderUsername}</pre>
-                          <pre>senderId: {msg?.data?.senderId}</pre>
-                          <pre>sentAt: {msg?.data?.sentAt}</pre>
-                          <pre>text: {msg?.data?.text}</pre>
-                        </div>
-                      );
-
-                      return <TextComponent key={`${idx}-${msg?.data?.id}`} />;
-                    })}
-                </div>
-              </div>
-            </>
-          );
-        }
-
-        if (roomNotFound || invalidId) {
-          return <p>{errMsg}</p>;
-        }
-
-        if (fetchErr) {
-          return <p>Something went wrong</p>;
-        }
-      })()}
-    </main>
+          if (fetchErr) {
+            return <p>Something went wrong</p>;
+          }
+        })()}
+      </main>
+    </Protected>
   );
 }

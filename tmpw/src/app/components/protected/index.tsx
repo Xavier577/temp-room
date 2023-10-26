@@ -20,11 +20,8 @@ export default function Protected({
   const router = useRouter();
 
   const getAccessToken = useAppStore((state) => state.getAccessToken);
-
   const accessToken = getAccessToken();
-
   const setUser = useAppStore((state) => state.setUser);
-
   const user = useAppStore((state) => state.user);
 
   const [fetchErr, setFetchErr] = useState(false);
@@ -33,7 +30,7 @@ export default function Protected({
     tempRoom
       .fetchUserProfile(accessToken)
       .then((result) => {
-        setUser(
+        setUser?.(
           new User({
             id: result.id,
             email: result.email,
@@ -52,11 +49,13 @@ export default function Protected({
 
         setFetchErr(true);
       });
-  }, [accessToken, router, setUser]);
+  }, []);
 
-  return (
-    <Fragment>
-      {user != null ? children : fetchErr ? authErrorComponent : null}
-    </Fragment>
-  );
+  if (user != null) {
+    return children;
+  } else if (fetchErr) {
+    return authErrorComponent;
+  } else {
+    return null;
+  }
 }

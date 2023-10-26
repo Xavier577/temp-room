@@ -2,27 +2,68 @@
 
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
-import Room from '@app/components/icons/room';
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import tempRoom from '@app/services/temp-room';
 import useAppStore from '@app/store';
 import Protected from '@app/components/protected';
-import Link from 'next/link';
-
-const isUserHost = (room: any, userId: string) => {
-  return room?.hostId === userId;
-};
+import useForm from '@app/hooks/use-form';
+import { AxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
+import { ParticipantsRoom } from '@app/room/components/participants-room';
+import { useError } from '@app/hooks/use-error';
 
 export default function Lobby() {
-  const getAccessToken = useAppStore((state) => state.getAccessToken);
-
-  const accessToken = getAccessToken();
+  const router = useRouter();
+  const [roomIdInput, handleInputChange] = useForm({ roomId: '' });
+  const [err, setErr] = useError<
+    'INVALID_ID' | 'ROOM_NOT_FOUND' | 'INTERNAL'
+  >();
 
   const user = useAppStore((state) => state.user);
+  const getAccessToken = useAppStore((state) => state.getAccessToken);
+  const accessToken = getAccessToken();
 
   const [roomsUserIsin, setRoomsUserIsin] = useState<{ [name: string]: any }[]>(
     [],
   );
+
+  const joinRoom = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    tempRoom
+      .fetchRoom(roomIdInput.roomId)
+      .then((data) => {
+        router.push(`/room/${data.id}`);
+      })
+      .catch((error) => {
+        if (error instanceof AxiosError) {
+          setErr((currState) => {
+            if (currState == null) {
+              return { msg: error.response?.data, code: 'INTERNAL' };
+            }
+            return {
+              ...currState,
+              code: 'INTERNAL',
+              msg: error.response?.data,
+            };
+          });
+          switch (error.response?.status) {
+            case 400:
+              setErr({
+                msg: error.response?.data,
+                code: 'INVALID_ID',
+              });
+              break;
+            case 404:
+              setErr({
+                msg: error?.response.data,
+                code: 'ROOM_NOT_FOUND',
+              });
+              break;
+          }
+        }
+      });
+  };
 
   useEffect(() => {
     tempRoom
@@ -69,16 +110,8 @@ export default function Lobby() {
             </div>
 
             <form
-              className={`
-                flex 
-                flex-col 
-                w-[80%] 
-                h-[30%] 
-                items-center 
-                justify-center 
-                gap-[35px]
-                `}
-              method={'POST'}
+              className={`flex flex-col w-[80%] h-[30%] items-center justify-center gap-[35px]`}
+              onSubmit={joinRoom}
             >
               <div className={'w-[80%] h-max flex flex-col'}>
                 <input
@@ -91,20 +124,26 @@ export default function Lobby() {
                   border-solid 
                   text-[#AAE980] 
                   ${
-                    // 'border-red-400 hover:border-red-400 focus:border-red-500'
-                    'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
+                    err != null
+                      ? 'border-red-400 hover:border-red-400 focus:border-red-500'
+                      : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
                   } 
                   focus:outline-none 
                   placeholder-[rgba(201,248,169,0.67)]
                   `}
                   placeholder={'Enter room id'}
                   name={'roomId'}
+                  value={roomIdInput.roomId}
+                  onChange={(e) => {
+                    setErr(null);
+                    handleInputChange(e);
+                  }}
                   type={'text'}
                   required={true}
                 />
               </div>
 
-              <div className={'flex flex-row w-[80%]  justify-end items-end'}>
+              <div className={'flex flex-row w-[80%] justify-end items-end'}>
                 <button
                   className={
                     'w-[100px] h-[50px] bg-[#C9F8A9] text-[14px] text-[#110F0F]'
@@ -114,59 +153,32 @@ export default function Lobby() {
                   Join
                 </button>
               </div>
+              {err != null ? (
+                <span className={'text-red-500'}>{err.msg}</span>
+              ) : null}
             </form>
 
-            <div
-              className={
-                'w-[64%] min-w-[420px] max-h-[325px] border border-solid border-[#1E1E1E] overflow-y-scroll'
-              }
-            >
+            {roomsUserIsin.length > 0 ? (
               <div
                 className={
-                  'flex flex-row items-center justify-center w-full h-[75px] border border-solid border-[#1E1E1E]'
+                  'w-[64%] min-w-[420px] max-h-[325px] border border-solid border-[#1E1E1E] overflow-y-scroll'
                 }
               >
-                <h3 className={'text-[#C9F8A9] text-[16px] font-sans'}>
-                  Rooms you are currently in
-                </h3>
-              </div>
-              {roomsUserIsin.length > 0
-                ? roomsUserIsin.map((room, idx) => (
-                    <Link href={`/room/${room.id}`} key={idx}>
-                      <div
-                        className={`flex flex-row items-center justify-start gap-4 px-5 w-full h-[95px] border border-solid border-[#1E1E1E] cursor-pointer`}
-                        key={idx}
-                      >
-                        <Room />
-                        <div className={`flex flex-col w-full`}>
-                          <div
-                            className={`flex flex-row w-full justify-between`}
-                          >
-                            <span
-                              className={'text-[#AAE980] text-[16px] font-sans'}
-                            >
-                              {room?.name}{' '}
-                            </span>
+                <div
+                  className={
+                    'flex flex-row items-center justify-center w-full h-[75px] border border-solid border-[#1E1E1E]'
+                  }
+                >
+                  <h3 className={'text-[#C9F8A9] text-[16px] font-sans'}>
+                    Rooms you are currently in
+                  </h3>
+                </div>
 
-                            {isUserHost(room, user!.id) ? (
-                              <span
-                                className={`text-[#C9F8A9] text-[14px] font-sans`}
-                              >
-                                (you are host)
-                              </span>
-                            ) : null}
-                          </div>
-                          <span
-                            className={'text-[#56644C] text-[13px] font-sans'}
-                          >
-                            {room.description}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                : null}
-            </div>
+                {roomsUserIsin.map((room, idx) => (
+                  <ParticipantsRoom room={room} userId={user!.id} key={idx} />
+                ))}
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

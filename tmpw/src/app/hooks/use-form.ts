@@ -1,25 +1,38 @@
-import { useState, ChangeEventHandler } from "react";
+import { useState, ChangeEventHandler } from 'react';
 
 export interface FormFields {
-    [name: string]: string | number | readonly string[];
+  [name: string]: string | number | readonly string[];
 }
 
 export type DataCollectionElement =
-    | HTMLInputElement
-    | HTMLSelectElement
-    | HTMLButtonElement
-    | HTMLTextAreaElement;
+  | HTMLInputElement
+  | HTMLSelectElement
+  | HTMLButtonElement
+  | HTMLTextAreaElement;
 
-const useForm = <T extends FormFields>(initialValues: T): [T, ChangeEventHandler<DataCollectionElement> ] => {
-    const [formValues, setFormValues] = useState(initialValues);
-    const handleChange: ChangeEventHandler<DataCollectionElement> = (event) => {
-        setFormValues((currentValues) => ({
-            ...currentValues,
-            [event.target.name]: event.target.value,
-        }));
-    };
+type ResetFieldValueFn = (key: string) => void;
 
-    return [formValues, handleChange];
+const useForm = <T extends FormFields>(
+  initialValues: T,
+): [T, ChangeEventHandler<DataCollectionElement>, ResetFieldValueFn] => {
+  const [formValues, setFormValues] = useState(initialValues);
+  const handleChange: ChangeEventHandler<DataCollectionElement> = (event) => {
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  const resetValue: ResetFieldValueFn = (key) => {
+    if (key in formValues) {
+      setFormValues((currState) => ({
+        ...currState,
+        [key]: '',
+      }));
+    }
+  };
+
+  return [formValues, handleChange, resetValue];
 };
 
 export default useForm;
