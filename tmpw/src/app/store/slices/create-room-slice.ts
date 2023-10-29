@@ -5,8 +5,11 @@ const createRoomSlice: StateCreator<AppState, [], [], RoomState> = (set) => ({
   rooms: new Map<string, Room>(),
   appendRoom: (room: Room) => {
     set(({ rooms }) => {
-      rooms.set(room.id, room);
-      return { rooms };
+      const mutMap = new Map(rooms.entries());
+
+      mutMap.set(room.id, room);
+
+      return { rooms: mutMap };
     });
   },
 });

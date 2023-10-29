@@ -5,17 +5,18 @@ import { isUserHost } from '@app/utils/is-user-host';
 
 export function ParticipantsRoom({
   room,
-  key,
+  componentKey,
   userId,
 }: {
   room: Record<string, any>;
   userId: string;
-  key: Key;
+  componentKey: Key;
 }) {
   return (
-    <Link href={`/room/${room.id}`} key={key}>
+    <Link href={`/room/${room.id}`} key={componentKey}>
       <div
         className={`flex flex-row items-center justify-start gap-4 px-5 w-full h-[95px] border border-solid border-[#1E1E1E] cursor-pointer`}
+        key={componentKey}
       >
         <Room />
         <div className={`flex flex-col w-full`}>

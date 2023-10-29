@@ -15,6 +15,11 @@ import { SendMsg } from '@app/components/icons/send-msg';
 import { ChatSection } from '@app/room/components/chat-section';
 import { RoomList } from '@app/room/components/room-list';
 import Protected from '@app/components/protected';
+import { SIGN_IN_PATH } from '@app/const';
+import { WsMessage } from '@app/utils/ws-message';
+import { WsEvents } from '@app/enums/ws-events';
+import { useMut } from '@app/hooks/use-synced-state';
+import Spinner from '@app/components/spinner';
 
 export type RoomParamProp = {
   params: { id: string };
@@ -22,7 +27,9 @@ export type RoomParamProp = {
 
 export default function ChatRoom({ params }: RoomParamProp) {
   const getAccessToken = useAppStore((state) => state.getAccessToken);
+
   const appendRoom = useAppStore((state) => state.appendRoom);
+
   const rooms = useAppStore((state) => state.rooms);
 
   const accessToken = getAccessToken();
@@ -40,9 +47,10 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
   const [fetchErr, setFetchErr] = useState(false);
 
-  const [isPartOfRoom, setIsPartOfRoom] = useState(false);
+  const [isPartOfRoom, getIsPartOfRoomMutValue, updateIsPartOfRoom] =
+    useMut(false);
 
-  const [isHost, setIsHost] = useState(false);
+  const [_isHost, setIsHost] = useState(false);
 
   const [textInput, textInputHandler, resetInputValue] = useForm({ msg: '' });
 
@@ -51,6 +59,17 @@ export default function ChatRoom({ params }: RoomParamProp) {
   const sendMsgButtonRef = useRef<HTMLButtonElement>(null);
 
   const [ws, connectSocket] = useWebsocket({
+    onOpen: (ws, _event) => {
+      if (!getIsPartOfRoomMutValue()) {
+        const joinMsg = new WsMessage({
+          event: WsEvents.JOIN_ROOM,
+          data: { roomId: params.id },
+        }).stringify();
+
+        ws.send(joinMsg);
+      }
+    },
+
     onMessage: (_, event) => {
       const msg = JSON.parse(event.data);
       if (msg.error != null) {
@@ -58,14 +77,17 @@ export default function ChatRoom({ params }: RoomParamProp) {
         return;
       }
 
+      if (msg?.event === WsEvents.JOIN_ROOM) {
+        updateIsPartOfRoom(true);
+      }
+
       if (msg?.data != null) {
         setMsgStack((currentState) => [...currentState, msg]);
       }
     },
     onError: (event) => console.error(event),
-    onClose: (event) => {
+    onClose: (_event) => {
       setMsgStack([]);
-      console.log(event);
     },
   });
 
@@ -88,7 +110,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
         if (err instanceof AxiosError) {
           if (err.response?.status === 401) {
-            router.push('/auth/login');
+            router.push(SIGN_IN_PATH);
           }
         }
       }
@@ -110,7 +132,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
           roomData?.participants as Participant[],
         ).some((p) => p.id === userData!.id);
 
-        setIsPartOfRoom(PART_OF_ROOM);
+        updateIsPartOfRoom(PART_OF_ROOM);
 
         setIsHost(roomData?.hostId === userData!.id);
 
@@ -126,7 +148,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
               setInvalidId(true);
               break;
             case 401:
-              router.push('/auth/login');
+              router.push(SIGN_IN_PATH);
               break;
             case 404:
               setRoomNotFound(true);
@@ -142,29 +164,33 @@ export default function ChatRoom({ params }: RoomParamProp) {
   }, []);
 
   useEffect(() => {
-    tempRoom
-      .getRoomsUserIsIn(accessToken)
-      .then((data: any[]) => {
-        for (const roomData of data) {
-          appendRoom(
-            new Room({
-              id: roomData.id,
-              name: roomData.name,
-              description: roomData.description,
-              hostId: roomData.hostId,
-              participants: roomData.participants,
-            }),
-          );
-        }
-      })
-      .catch((err) => console.error(err));
-  }, []);
+    if (isPartOfRoom) {
+      tempRoom
+        .getRoomsUserIsIn(accessToken)
+        .then((data: any[]) => {
+          for (const roomData of data) {
+            appendRoom(
+              new Room({
+                id: roomData.id,
+                name: roomData.name,
+                description: roomData.description,
+                hostId: roomData.hostId,
+                participants: roomData.participants,
+              }),
+            );
+          }
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [accessToken, appendRoom, isPartOfRoom]);
 
   return (
     <Protected>
       <main className={'flex flex-row h-screen bg-[#110F0F]'}>
         {(() => {
-          if (rooms.get(params.id) && isPartOfRoom) {
+          const room = rooms.get(params.id);
+
+          if (room && isPartOfRoom && ws != null) {
             return (
               <>
                 <div className={'w-max h-full'}>
@@ -179,7 +205,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
                   </div>
                   <div
                     className={
-                      'w-full h-[calc(100%-85px)] border border-solid border-[#1E1E1E]'
+                      'w-full h-[calc(100%-85px)] border border-solid border-[#1E1E1E] overflow-y-scroll'
                     }
                   >
                     <RoomList currentRoomId={params.id} rooms={rooms} />
@@ -199,11 +225,11 @@ export default function ChatRoom({ params }: RoomParamProp) {
                         <span
                           className={'text-[#AAE980] text-[16px] font-sans'}
                         >
-                          {'Travel talk'}
+                          {room?.name}
                         </span>
                       </div>
                       <span className={'text-[#56644C] text-[13px] font-sans'}>
-                        {'3 participant'}
+                        {room?.participants?.length} participant
                       </span>
                     </div>
                   </div>
@@ -260,15 +286,16 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
                       <button
                         ref={sendMsgButtonRef}
-                        onClick={(e) => {
+                        onClick={() => {
                           if (textInput?.msg?.trim?.() != '' && ws != null) {
-                            const msg = JSON.stringify({
-                              event: 'chat',
+                            const msg = new WsMessage({
+                              event: WsEvents.CHAT,
                               data: {
                                 message: textInput.msg,
                                 roomId: rooms.get(params.id)?.id,
                               },
-                            });
+                            }).stringify();
+
                             ws.send(msg);
                             resetInputValue('msg');
                           }
@@ -281,14 +308,22 @@ export default function ChatRoom({ params }: RoomParamProp) {
                 </div>
               </>
             );
-          }
-
-          if (roomNotFound || invalidId) {
+          } else if (roomNotFound || invalidId) {
             return <p>{errMsg}</p>;
-          }
-
-          if (fetchErr) {
+          } else if (fetchErr) {
             return <p>Something went wrong</p>;
+          } else {
+            return (
+              <div
+                className={
+                  'w-full h-full flex flex-col items-center justify-center gap-2'
+                }
+              >
+                <Spinner />
+
+                <span className={'text-[#AAE980]'}>Joining room</span>
+              </div>
+            );
           }
         })()}
       </main>

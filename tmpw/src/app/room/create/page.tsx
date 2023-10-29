@@ -8,6 +8,7 @@ import Protected from '@app/components/protected';
 import AppLogo from '@app/components/icons/app-logo';
 import UserIcon from '@app/components/icons/user-icon';
 import { ChangeEventHandler, FormEvent } from 'react';
+import Link from 'next/link';
 
 export default function CreateRoom() {
   const [formField, handleChange] = useForm({
@@ -49,7 +50,9 @@ export default function CreateRoom() {
     <Protected>
       <main className="flex flex-col h-screen bg-[#110F0F]">
         <header className={'flex flex-row justify-between p-10 w-full'}>
-          <AppLogo />
+          <Link href={'/'}>
+            <AppLogo />
+          </Link>
           <UserIcon />
         </header>
 

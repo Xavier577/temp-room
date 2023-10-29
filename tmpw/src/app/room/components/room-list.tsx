@@ -9,13 +9,13 @@ export type RoomListProps = {
 };
 export function RoomList({ currentRoomId, rooms }: RoomListProps) {
   return mapReduce<JSX.Element[]>(rooms, [], (room, accumulator, key) => {
-    accumulator.push(
+    const comp = (
       <Link href={`/room/${room.id}`} key={key}>
+        {' '}
         <div
           className={`flex flex-row ${
             currentRoomId === room.id ? 'bg-[#1E1E1E]' : ''
           } items-center justify-start gap-4 px-5 w-[320px] h-[95px] border border-solid border-[#1E1E1E] cursor-pointer`}
-          key={key}
         >
           <RoomIcon />
           <div className={`flex flex-col w-full`}>
@@ -29,8 +29,10 @@ export function RoomList({ currentRoomId, rooms }: RoomListProps) {
             </span>
           </div>
         </div>
-      </Link>,
+      </Link>
     );
+
+    accumulator.push(comp);
 
     return accumulator;
   });

@@ -178,7 +178,12 @@ export default function Lobby() {
                 </div>
 
                 {roomsUserIsin.map((room, idx) => (
-                  <ParticipantsRoom room={room} userId={user!.id} key={idx} />
+                  // eslint-disable-next-line react/jsx-key
+                  <ParticipantsRoom
+                    room={room}
+                    userId={user!.id}
+                    componentKey={idx}
+                  />
                 ))}
               </div>
             ) : null}
