@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { opt } from 'ts-interface-checker';
 
 export type UseWebsocketOptions = Partial<{
   /** if true would set ws to `undefined` when socket connection is closed. `default true`*/
@@ -9,6 +10,11 @@ export type UseWebsocketOptions = Partial<{
   onClose: (event: CloseEvent) => void;
 }>;
 
+export interface ConnectSocketOptions
+  extends Omit<UseWebsocketOptions, 'resetStateOnClose'> {
+  protocols?: string | string[];
+}
+
 export function useWebsocket(
   options: UseWebsocketOptions = { resetStateOnClose: true },
 ) {
@@ -18,30 +24,43 @@ export function useWebsocket(
     options.resetStateOnClose = true;
   }
 
-  const connectSocket = (url: string, protocols?: string | string[]) => {
-    const socket = new WebSocket(url, protocols);
+  const connectSocket = (
+    url: string,
+    connectOptions?: ConnectSocketOptions,
+  ) => {
+    const socket = new WebSocket(url, connectOptions?.protocols);
 
-    socket.addEventListener('open', (event) => {
-      setWs(socket);
-      options?.onOpen?.(socket, event);
+    const onOpen = connectOptions?.onOpen ?? options?.onOpen;
+    const onMessage = connectOptions?.onMessage ?? options?.onMessage;
+    const onError = connectOptions?.onError ?? options?.onError;
+    const onClose = connectOptions?.onClose ?? options?.onClose;
+
+    const wsOpenPromise = new Promise<WebSocket>((res) => {
+      socket.addEventListener('open', (event) => {
+        setWs(socket);
+        onOpen?.(socket, event);
+        res(socket);
+      });
     });
 
-    if (options?.onMessage != null) {
+    if (connectOptions?.onMessage != null || options?.onMessage != null) {
       socket.addEventListener('message', (event) => {
-        options?.onMessage?.(socket, event);
+        onMessage?.(socket, event);
       });
     }
 
-    if (options?.onError != null) {
+    if (connectOptions?.onError != null || options?.onError != null) {
       socket.addEventListener('error', (event) => {
-        options?.onError?.(event);
+        onError?.(event);
       });
     }
 
     socket.addEventListener('close', (event) => {
       if (options.resetStateOnClose) setWs(undefined);
-      options?.onClose?.(event);
+      onClose?.(event);
     });
+
+    return wsOpenPromise;
   };
 
   return [ws, connectSocket] as const;

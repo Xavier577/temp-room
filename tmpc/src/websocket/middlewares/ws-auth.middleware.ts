@@ -25,8 +25,6 @@ export async function WsAuthMiddleware(
 
   const token = <string>queryParams?.ticket;
 
-  console.log(token);
-
   if (token == null) {
     logger.log('UNAUTHENTICATED_CLIENT');
 

@@ -1,4 +1,4 @@
-import { Key } from 'react';
+import { Fragment, Key } from 'react';
 
 export function ChatMessage({
   componentKey,
@@ -10,11 +10,10 @@ export function ChatMessage({
   isSelf: boolean;
 }) {
   return (
-    <>
+    <Fragment key={componentKey}>
       {isSelf ? (
         <div
           className={`w-full h-max flex flex-row items-center justify-end mt-2`}
-          key={componentKey}
         >
           {/* msg-box*/}
           <div
@@ -50,10 +49,7 @@ export function ChatMessage({
           </div>
         </div>
       ) : (
-        <div
-          className={`w-full flex flex-row items-center justify-start mt-2`}
-          key={componentKey}
-        >
+        <div className={`w-full flex flex-row items-center justify-start mt-2`}>
           {/* msg-box*/}
           <div
             className={
@@ -89,6 +85,6 @@ export function ChatMessage({
           </div>
         </div>
       )}
-    </>
+    </Fragment>
   );
 }
