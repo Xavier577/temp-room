@@ -29,8 +29,6 @@ export function useUser() {
             username: userData.username,
           }),
         );
-
-        setIsFetchComplete(true);
       })
       .catch((err) => {
         if (err instanceof AxiosError) {
@@ -41,6 +39,9 @@ export function useUser() {
         } else {
           setError({ code: 'INTERNAL', msg: 'something went wrong' });
         }
+      })
+      .finally(() => {
+        setIsFetchComplete(true);
       });
   }, []);
 
