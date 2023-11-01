@@ -16,7 +16,7 @@ export class RoomController {
 
     const room = await this.roomService.create({
       name: payload.name,
-      description: payload.description,
+      description: payload.description || undefined,
       hostId: user.id,
     });
 

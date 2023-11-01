@@ -37,9 +37,6 @@ export default function CreateRoom() {
         description: formField.roomDescription,
       })
       .then((data) => {
-        // save room to rooms state TODO: create room state
-        console.log(data);
-
         // go to room
         router.push(`/room/${data.id}`);
       })
@@ -142,7 +139,7 @@ export default function CreateRoom() {
                   type={'text'}
                   value={formField.roomDescription}
                   onChange={onChangeHandler}
-                  required={true}
+                  required={false}
                 />
               </div>
 

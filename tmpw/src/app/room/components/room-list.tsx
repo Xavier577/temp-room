@@ -24,8 +24,8 @@ export function RoomList({ currentRoomId, rooms }: RoomListProps) {
                 {room?.name}{' '}
               </span>
             </div>
-            <span className={'text-[#56644C] text-[13px] font-sans'}>
-              {room.description}
+            <span className={'text-[#56644C] text-[13px] font-sans truncate'}>
+              {room?.description}
             </span>
           </div>
         </div>

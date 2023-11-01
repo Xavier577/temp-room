@@ -160,11 +160,15 @@ export class RoomRepositoryImpl implements RoomRepository {
     participant: string[],
   ): Promise<Room> {
     const room = await this.roomModel
-      .findByIdAndUpdate(id, {
-        $push: {
-          participants: participant,
+      .findByIdAndUpdate(
+        id,
+        {
+          $push: {
+            participants: participant,
+          },
         },
-      })
+        { new: true },
+      )
       .populate('participants');
 
     if (room == null) {
@@ -188,11 +192,15 @@ export class RoomRepositoryImpl implements RoomRepository {
     participants: string[],
   ): Promise<Room> {
     const room = await this.roomModel
-      .findByIdAndUpdate(id, {
-        $pull: {
-          participants: participants,
+      .findByIdAndUpdate(
+        id,
+        {
+          $pull: {
+            participants: participants,
+          },
         },
-      })
+        { new: true },
+      )
       .populate('participants');
 
     if (room == null) {

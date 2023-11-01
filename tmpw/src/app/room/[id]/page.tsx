@@ -8,12 +8,11 @@ import { ChatRoomUI } from '@app/room/components/chat-room-ui';
 import { ChatRoomSideBar } from '@app/room/components/chat-room-side-bar';
 import { Puff } from '@app/components/puff';
 import { useError } from '@app/hooks/use-error';
-import { useUser } from '@app/hooks/use-user';
 import tempRoom from '@app/services/temp-room';
 import { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { SIGN_IN_PATH } from '@app/const';
-import { Room } from '@app/store/states';
+import { Room, User } from '@app/store/states';
 import { WsMessage } from '@app/utils/ws-message';
 import { WsEvents } from '@app/enums/ws-events';
 
@@ -22,7 +21,10 @@ export type RoomParamProp = {
 };
 
 export default function ChatRoom({ params }: RoomParamProp) {
-  const { user, accessToken, error: userFetchErr, isFetchComplete } = useUser();
+  const user = useAppStore((state) => state.user);
+  const getAccessToken = useAppStore((state) => state.getAccessToken);
+  const accessToken = getAccessToken();
+  const setUser = useAppStore((state) => state.setUser);
   const rooms = useAppStore((state) => state.rooms);
   const appendRoom = useAppStore((state) => state.appendRoom);
   const [currentRoom, setCurrentRoom] = useState<Room>();
@@ -32,11 +34,11 @@ export default function ChatRoom({ params }: RoomParamProp) {
     onMessage: (_, event) => {
       const msg = JSON.parse(event.data);
       if (msg.error != null) {
-        console.log(msg.error);
+        console.error(msg.error);
         return;
       }
 
-      if (msg?.event === WsEvents.JOIN_ROOM) {
+      if (msg?.event == WsEvents.JOIN_ROOM) {
         setIsPartOfRoom(true);
       }
 
@@ -56,66 +58,84 @@ export default function ChatRoom({ params }: RoomParamProp) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isFetchComplete) return;
-    if (user == null) {
-      if (userFetchErr != null && userFetchErr.code === 'INTERNAL') {
-        setErr(userFetchErr as typeof err);
-      }
-    } else {
-      tempRoom
-        .fetchRoom(params.id)
-        .then((roomData) => {
-          const room = new Room({
-            id: roomData.id,
-            name: roomData.name,
-            description: roomData.description,
-            hostId: roomData.hostId,
-            participants: roomData.participants ?? [],
-          });
+    tempRoom
+      .fetchUserProfile<User>(accessToken)
+      .then((userData) => {
+        setUser(
+          new User({
+            id: userData.id,
+            email: userData.email,
+            username: userData.username,
+          }),
+        );
 
-          setCurrentRoom(room);
+        tempRoom
+          .fetchRoom(params.id)
+          .then((roomData) => {
+            const room = new Room({
+              id: roomData.id,
+              name: roomData.name,
+              description: roomData.description,
+              hostId: roomData.hostId,
+              participants: roomData.participants ?? [],
+            });
 
-          const PART_OF_ROOM = room.participants.some((p) => p.id === user!.id);
+            setCurrentRoom(room);
 
-          setIsPartOfRoom(PART_OF_ROOM);
+            const PART_OF_ROOM = room.participants.some(
+              (p) => p.id === userData?.id,
+            );
 
-          const url = `${process.env.temproomSocketBaseUrl}?ticket=${accessToken}`;
+            setIsPartOfRoom(PART_OF_ROOM);
 
-          connectSocket(url).then((ws) => {
-            if (!PART_OF_ROOM) {
-              const joinMsg = new WsMessage({
-                event: WsEvents.JOIN_ROOM,
-                data: { roomId: params.id },
-              }).stringify();
+            const url = `${process.env.temproomSocketBaseUrl}?ticket=${accessToken}`;
 
-              ws.send(joinMsg);
+            connectSocket(url).then((ws) => {
+              if (!PART_OF_ROOM) {
+                const joinMsg = new WsMessage({
+                  event: WsEvents.JOIN_ROOM,
+                  data: { roomId: params.id },
+                }).stringify();
+
+                ws.send(joinMsg);
+              }
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+            if (error instanceof AxiosError) {
+              switch (error.response?.status) {
+                case 400:
+                  setErr({
+                    code: 'INVALID_ROOM_ID',
+                    msg: error?.response?.data,
+                  });
+                  break;
+                case 401:
+                  router.push(SIGN_IN_PATH);
+                  break;
+                case 404:
+                  setErr({
+                    code: 'ROOM_NOT_FOUND',
+                    msg: error?.response?.data,
+                  });
+                  break;
+              }
+            } else {
+              setErr({ code: 'INTERNAL', msg: 'Something went wrong' });
             }
           });
-        })
-        .catch((error) => {
-          console.error(error);
-          if (error instanceof AxiosError) {
-            switch (error.response?.status) {
-              case 400:
-                setErr({ code: 'INVALID_ROOM_ID', msg: error?.response?.data });
-                break;
-              case 401:
-                router.push(SIGN_IN_PATH);
-                break;
-              case 404:
-                setErr({ code: 'ROOM_NOT_FOUND', msg: error?.response?.data });
-                break;
-            }
-          } else {
-            setErr({ code: 'INTERNAL', msg: 'Something went wrong' });
+      })
+      .catch((err) => {
+        if (err instanceof AxiosError) {
+          if (err.response?.status === 401) {
+            router.push(SIGN_IN_PATH);
           }
-        });
-    }
-
-    return () => {
-      setMsgStack([]);
-    };
-  }, [isFetchComplete]);
+        } else {
+          setErr({ code: 'INTERNAL', msg: 'something went wrong' });
+        }
+      });
+  }, []);
 
   useEffect(() => {
     tempRoom
@@ -136,15 +156,23 @@ export default function ChatRoom({ params }: RoomParamProp) {
       .catch((err) => console.error(err));
   }, [isPartOfRoom]);
 
+  const [showUI, setShowUI] = useState(false);
+
+  useEffect(() => {
+    if (isPartOfRoom && currentRoom != null && ws != null && user != null) {
+      setShowUI(true);
+    }
+  }, [isPartOfRoom, ws, currentRoom, user]);
+
   return (
     <Protected>
       <main className={'flex flex-row h-screen bg-[#110F0F]'}>
         <ChatRoomSideBar currentRoomId={params.id} participatingRooms={rooms} />
-        {isPartOfRoom && currentRoom != null && ws != null && user != null ? (
+        {showUI ? (
           <ChatRoomUI
-            room={currentRoom}
-            ws={ws}
-            user={user}
+            room={currentRoom!}
+            ws={ws!}
+            user={user!}
             msgStack={msgStack}
           />
         ) : (
@@ -158,7 +186,9 @@ export default function ChatRoom({ params }: RoomParamProp) {
             ) : (
               <>
                 <Puff />
-                <span className={'text-[#AAE980]'}>Joining room</span>
+                {isPartOfRoom ? null : (
+                  <span className={'text-[#AAE980]'}>Joining room</span>
+                )}
               </>
             )}
           </div>

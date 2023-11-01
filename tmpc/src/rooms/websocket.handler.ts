@@ -83,15 +83,6 @@ export class RoomWebsocketHandler {
 
     const roomChats = await this.chatService.getAllRoomChat(room.id);
 
-    for (const message of roomChats) {
-      const msg = new WsMessage<Message>({
-        data: message,
-        event: 'chat',
-      }).stringify();
-
-      ws.send(msg);
-    }
-
     const msgToSelf = new WsMessage<any>({
       data: { message: `you joined ${room.name}` },
       event: payload.event,
@@ -106,7 +97,7 @@ export class RoomWebsocketHandler {
 
         if (userId !== user.id) return false;
 
-        return updatedRoom.participants.some((r) => r.id === userId);
+        return updatedRoom.participants.some((r) => r.id === user.id);
       },
       afterBroadcast: () => {
         this.logger.log('BROADCASTING_TO_ROOM_MEMBERS');
@@ -128,6 +119,15 @@ export class RoomWebsocketHandler {
         });
       },
     });
+
+    for (const message of roomChats) {
+      const msg = new WsMessage<Message>({
+        data: message,
+        event: 'chat',
+      }).stringify();
+
+      ws.send(msg);
+    }
   };
 
   public leaveRoom = async (
