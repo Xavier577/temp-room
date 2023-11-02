@@ -58,7 +58,7 @@ export function ChatMessage({
           >
             {/* Sender username*/}
             <span className={'text-[11px] text-[#56644C]'}>
-              {msgData?.senderUsername}
+              {msgData?.sender?.username}
             </span>
             {/* msg-box-content*/}
             <p

@@ -5,6 +5,14 @@ import { WsBroadcastMiddleware } from '../middlewares/ws-broadcast.middleware';
 import roomWebsocketHandler from '../../rooms/websocket.handler';
 import chatWebsocketHandler from '../../chat/websocket.handler';
 import { WsErrorCode, WsException } from '../../shared/errors/websocket';
+import {
+  CHAT,
+  END_ROOM,
+  JOIN_ROOM,
+  LEAVE_ROOM,
+  REMOVE_PARTICIPANT,
+  SYNC,
+} from '../events';
 
 export type WsMessageEventHandler = (
   message: RawData,
@@ -30,28 +38,32 @@ export function handleWsMessage(
       const broadcastFn = WsBroadcastMiddleware(ws, wsServer, isBinary);
 
       switch (payload.event) {
-        case 'join_room':
+        case JOIN_ROOM:
           roomWebsocketHandler.joinRoom(payload, ws, broadcastFn).catch((e) => {
             ws.emit('error', e);
           });
           break;
-        case 'chat':
+        case CHAT:
           chatWebsocketHandler
             .sendMessage(payload, ws, broadcastFn)
             .catch((e) => ws.emit('error', e));
           break;
-        case 'end_room':
+        case SYNC:
+          chatWebsocketHandler
+            .syncMessages(payload, ws, broadcastFn)
+            .catch((e) => ws.emit('error', e));
+          break;
+        case END_ROOM:
           roomWebsocketHandler
             .endRoom(payload, ws, broadcastFn)
             .catch((e) => ws.emit('error', e));
           break;
-
-        case 'remove_participant':
+        case REMOVE_PARTICIPANT:
           roomWebsocketHandler
             .removeParticipant(payload, ws, broadcastFn)
             .catch((e) => ws.emit('error', e));
           break;
-        case 'leave_room':
+        case LEAVE_ROOM:
           roomWebsocketHandler
             .leaveRoom(payload, ws, broadcastFn)
             .catch((e) => ws.emit('error', e));

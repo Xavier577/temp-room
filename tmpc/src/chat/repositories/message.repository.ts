@@ -2,7 +2,8 @@ import MessageModel, { Message as MMessage } from '../../mongo/schemas/message';
 import { Message } from '../entities/message.entity';
 import mongoose from 'mongoose';
 import { CreateNullClass } from '../../shared/utils/null-class';
-export interface CreateMessageData extends Partial<Message> {
+export interface CreateMessageData
+  extends Partial<Omit<Message, 'id' | 'sender'>> {
   text: string;
   senderId: string;
   roomId: string;
@@ -22,7 +23,7 @@ export class MessageRepositoryImpl implements MessageRepository {
   constructor(private readonly messageModel: mongoose.Model<MMessage>) {}
 
   public async create(data: CreateMessageData): Promise<Message> {
-    const msg = await this.messageModel.create({
+    const m = await this.messageModel.create({
       text: data.text,
       sender: data.senderId,
       room: data.roomId,
@@ -30,18 +31,23 @@ export class MessageRepositoryImpl implements MessageRepository {
       delivered: data.delivered,
     });
 
+    const msg = await this.messageModel.findById(m.id).populate('sender');
+
     return new Message({
-      id: msg._id.toString(),
-      text: msg.text,
-      senderId: data.senderId,
-      roomId: data.roomId,
-      sentAt: msg.sentAt,
-      delivered: msg.delivered,
+      id: msg!._id.toString(),
+      text: msg!.text,
+      sender: {
+        id: (msg!.sender as any)._id.toString(),
+        username: (msg!.sender as any).username,
+      },
+      roomId: msg!.room.toString(),
+      sentAt: msg!.sentAt,
+      delivered: msg!.delivered,
     });
   }
 
   public async findById(id: string): Promise<Message> {
-    const msg = await this.messageModel.findById(id);
+    const msg = await this.messageModel.findById(id).populate('sender');
 
     if (msg == null) {
       return CreateNullClass();
@@ -50,7 +56,10 @@ export class MessageRepositoryImpl implements MessageRepository {
     return new Message({
       id: msg._id.toString(),
       text: msg.text,
-      senderId: msg.sender.toString(),
+      sender: {
+        id: (msg.sender as any)?._id.toString(),
+        username: (msg.sender as any).username,
+      },
       roomId: msg.room.toString(),
       sentAt: msg.sentAt,
       delivered: msg.delivered,
@@ -68,9 +77,11 @@ export class MessageRepositoryImpl implements MessageRepository {
       updateQuery.$set = { ...updateQuery, delivered: data.delivered };
     }
 
-    const msg = await this.messageModel.findByIdAndUpdate(id, updateQuery, {
-      new: true,
-    });
+    const msg = await this.messageModel
+      .findByIdAndUpdate(id, updateQuery, {
+        new: true,
+      })
+      .populate('sender');
 
     if (msg == null) {
       return CreateNullClass();
@@ -79,7 +90,10 @@ export class MessageRepositoryImpl implements MessageRepository {
     return new Message({
       id: msg._id.toString(),
       text: msg.text,
-      senderId: msg.sender.toString(),
+      sender: {
+        id: (msg.sender as any)._id.toString(),
+        username: (msg.sender as any).username,
+      },
       roomId: msg.room.toString(),
       sentAt: msg.sentAt,
       delivered: msg.delivered,
@@ -87,14 +101,19 @@ export class MessageRepositoryImpl implements MessageRepository {
   }
 
   public async findRoomMessages(roomId: string): Promise<Message[]> {
-    const messages = await this.messageModel.find({ room: roomId });
+    const messages = await this.messageModel
+      .find({ room: roomId })
+      .populate('sender');
 
     return messages.map(
       (msg) =>
         new Message({
           id: msg._id.toString(),
           text: msg.text,
-          senderId: msg.sender.toString(),
+          sender: {
+            id: (msg.sender as any)._id.toString(),
+            username: (msg.sender as any).username,
+          },
           roomId: msg.room.toString(),
           sentAt: msg.sentAt,
           delivered: msg.delivered,

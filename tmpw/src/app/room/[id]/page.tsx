@@ -43,6 +43,20 @@ export default function ChatRoom({ params }: RoomParamProp) {
         setIsPartOfRoom(true);
       }
 
+      if (msg?.event == WsEvents.SYNC) {
+        const syncedChat = msg?.data?.map((m: any) => ({
+          data: {
+            id: m.id,
+            text: m.text,
+            sender: m.sender,
+            sentAt: m.sentAt,
+          },
+          event: WsEvents.CHAT,
+        }));
+
+        setMsgStack(() => syncedChat);
+      }
+
       if (msg?.data != null) {
         setMsgStack((currentState) => [...currentState, msg]);
       }
@@ -101,6 +115,13 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
                 ws.send(joinMsg);
               }
+
+              const syncMsg = new WsMessage({
+                event: WsEvents.SYNC,
+                data: { roomId: params.id },
+              }).stringify();
+
+              ws.send(syncMsg);
             });
           })
           .catch((error) => {

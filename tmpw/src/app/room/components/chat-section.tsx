@@ -23,7 +23,7 @@ export function ChatSection({
                 <ChatMessage
                   componentKey={`${idx}-${msg?.data?.id}`}
                   msgData={msg?.data}
-                  isSelf={msg?.data?.senderId === user?.id}
+                  isSelf={msg?.data?.sender?.id === user?.id}
                 />
               );
             }

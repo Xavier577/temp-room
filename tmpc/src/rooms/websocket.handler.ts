@@ -5,19 +5,20 @@ import { WsMessage } from '../websocket/dtos/ws-message';
 import { WsErrorCode, WsException } from '../shared/errors/websocket';
 import { WsBroadcastFn } from '../websocket/middlewares/ws-broadcast.middleware';
 import Logger from '../logger';
-import chatService, { ChatService } from '../chat/services/chat.service';
-import { Message } from '../chat/entities/message.entity';
 import { User } from '../users/entities/user.entity';
 import Deasyncify from 'deasyncify';
 import parseAsyncObjectId from '../shared/utils/parse-async-objectid';
 import { Duration } from '../shared/enums';
+import {
+  END_ROOM,
+  JOIN_ROOM,
+  LEAVE_ROOM,
+  REMOVE_PARTICIPANT,
+} from '../websocket/events';
 
 export class RoomWebsocketHandler {
   private readonly logger = new Logger(RoomWebsocketHandler.name);
-  constructor(
-    private readonly chatService: ChatService,
-    private readonly roomService: RoomService,
-  ) {}
+  constructor(private readonly roomService: RoomService) {}
 
   public joinRoom = async (
     payload: WsPayload,
@@ -81,11 +82,9 @@ export class RoomWebsocketHandler {
 
     this.logger.log('NEW_PARTICIPANT_JOINED_GROUP');
 
-    const roomChats = await this.chatService.getAllRoomChat(room.id);
-
     const msgToSelf = new WsMessage<any>({
       data: { message: `you joined ${room.name}` },
-      event: payload.event,
+      event: JOIN_ROOM,
     }).stringify();
 
     this.logger.log('BROADCASTING_TO_SELF');
@@ -104,7 +103,7 @@ export class RoomWebsocketHandler {
 
         const msgToOthers = new WsMessage<any>({
           data: { message: `${user.username} has joined` },
-          event: payload.event,
+          event: JOIN_ROOM,
         }).stringify();
 
         broadcast(msgToOthers, {
@@ -119,15 +118,6 @@ export class RoomWebsocketHandler {
         });
       },
     });
-
-    for (const message of roomChats) {
-      const msg = new WsMessage<Message>({
-        data: message,
-        event: 'chat',
-      }).stringify();
-
-      ws.send(msg);
-    }
   };
 
   public leaveRoom = async (
@@ -183,12 +173,12 @@ export class RoomWebsocketHandler {
     await this.roomService.leaveRoom({ userId: user.id, roomId: room.id });
 
     const msgToAlertSelf = new WsMessage({
-      event: 'user_left',
+      event: LEAVE_ROOM,
       data: { message: `you left ${room.name}` },
     }).stringify();
 
     const msgToAlertOthers = new WsMessage({
-      event: 'user_left',
+      event: LEAVE_ROOM,
       data: { message: `${user.username} left ${room.name}` },
     }).stringify();
 
@@ -288,12 +278,12 @@ export class RoomWebsocketHandler {
     });
 
     const msgToAlertHost = new WsMessage({
-      event: 'user_removed',
+      event: REMOVE_PARTICIPANT,
       data: { message: `you removed ${user.username}` },
     }).stringify();
 
     const msgToAlertRemovedParticipant = new WsMessage({
-      event: 'user_removed',
+      event: REMOVE_PARTICIPANT,
       data: {
         id: participant.id,
         message: `${user.username} removed you`,
@@ -301,7 +291,7 @@ export class RoomWebsocketHandler {
     }).stringify();
 
     const msgToAlertOthers = new WsMessage({
-      event: 'user_removed',
+      event: REMOVE_PARTICIPANT,
       data: { message: `${user.username} removed ${participant.username}` },
     }).stringify();
 
@@ -394,7 +384,7 @@ export class RoomWebsocketHandler {
     }
 
     const msg = new WsMessage({
-      event: 'room_ended',
+      event: END_ROOM,
       data: { message: `${user.username} has ended the room` },
     }).stringify();
 
@@ -421,6 +411,6 @@ export class RoomWebsocketHandler {
   };
 }
 
-const roomWebsocketHandler = new RoomWebsocketHandler(chatService, roomService);
+const roomWebsocketHandler = new RoomWebsocketHandler(roomService);
 
 export default roomWebsocketHandler;
