@@ -24,7 +24,7 @@ export function ChatMessage({
             {/* msg-box-content*/}
             <p
               className={
-                'h-max text-[13px] whitespace-pre max-w-[100%] p-1 text-[#110F0F]'
+                'h-max text-[13px] whitespace-pre break-all max-w-[100%] p-1 text-[#110F0F]'
               }
             >
               {msgData?.text}
@@ -63,7 +63,7 @@ export function ChatMessage({
             {/* msg-box-content*/}
             <p
               className={
-                'h-max text-[13px] max-w-[100%] whitespace-pre p-1 text-[#AAE980]'
+                'h-max text-[13px] max-w-[100%] whitespace-pre break-all p-1 text-[#AAE980]'
               }
             >
               {msgData?.text}
