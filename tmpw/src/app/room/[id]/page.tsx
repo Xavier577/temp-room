@@ -29,6 +29,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
   const appendRoom = useAppStore((state) => state.appendRoom);
   const [currentRoom, setCurrentRoom] = useState<Room>();
   const [isPartOfRoom, setIsPartOfRoom] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [msgStack, setMsgStack] = useState<any[]>([]);
   const [ws, connectSocket] = useWebsocket({
     onMessage: (_, event) => {
@@ -92,6 +93,7 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
             connectSocket(url).then((ws) => {
               if (!PART_OF_ROOM) {
+                setIsJoiningRoom(true);
                 const joinMsg = new WsMessage({
                   event: WsEvents.JOIN_ROOM,
                   data: { roomId: params.id },
@@ -186,9 +188,9 @@ export default function ChatRoom({ params }: RoomParamProp) {
             ) : (
               <>
                 <Puff />
-                {isPartOfRoom ? null : (
+                {isJoiningRoom ? (
                   <span className={'text-[#AAE980]'}>Joining room</span>
-                )}
+                ) : null}
               </>
             )}
           </div>
