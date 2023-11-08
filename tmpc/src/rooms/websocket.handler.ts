@@ -83,7 +83,7 @@ export class RoomWebsocketHandler {
     this.logger.log('NEW_PARTICIPANT_JOINED_GROUP');
 
     const msgToSelf = new WsMessage<any>({
-      data: { message: `you joined ${room.name}` },
+      data: { message: `you joined ${room.name}`, roomUpdate: updatedRoom },
       event: JOIN_ROOM,
     }).stringify();
 
@@ -102,7 +102,10 @@ export class RoomWebsocketHandler {
         this.logger.log('BROADCASTING_TO_ROOM_MEMBERS');
 
         const msgToOthers = new WsMessage<any>({
-          data: { message: `${user.username} has joined` },
+          data: {
+            message: `${user.username} joined`,
+            roomUpdate: updatedRoom,
+          },
           event: JOIN_ROOM,
         }).stringify();
 

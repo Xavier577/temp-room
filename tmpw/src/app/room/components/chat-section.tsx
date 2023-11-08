@@ -18,13 +18,29 @@ export function ChatSection({
     >
       {socket != null && user != null
         ? reverseMap(msgStack, (msg, idx) => {
-            if (msg?.event == WsEvents.CHAT) {
+            if (msg?.event === WsEvents.CHAT) {
               return (
                 <ChatMessage
                   componentKey={`${idx}-${msg?.data?.id}`}
                   msgData={msg?.data}
                   isSelf={msg?.data?.sender?.id === user?.id}
                 />
+              );
+            } else if (msg?.event === WsEvents.JOIN_ROOM) {
+              return (
+                <div
+                  className={
+                    'w-full h-max flex flex-row items-center justify-center mt-2'
+                  }
+                >
+                  <span
+                    className={
+                      "w-max p-2 bg-[rgba(30,30,30,0.6)] text-[#56644C] text-[12px] border border-solid border-transparent rounded p-1'"
+                    }
+                  >
+                    {msg?.data?.message}
+                  </span>
+                </div>
               );
             }
           })

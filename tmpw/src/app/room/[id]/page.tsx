@@ -41,25 +41,25 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
       if (msg?.event == WsEvents.JOIN_ROOM) {
         setIsPartOfRoom(true);
+        setCurrentRoom((currentState) => msg?.data?.roomUpdate ?? currentState);
       }
 
-      if (msg?.event == WsEvents.SYNC) {
-        const syncedChat = msg?.data?.map((m: any) => ({
-          data: {
-            id: m.id,
-            text: m.text,
-            sender: m.sender,
-            sentAt: m.sentAt,
-          },
-          event: WsEvents.CHAT,
-        }));
+      setMsgStack((currentState) => {
+        if (msg?.event === WsEvents.SYNC) {
+          const syncedChat = msg?.data?.map((m: any) => ({
+            data: {
+              id: m.id,
+              text: m.text,
+              sender: m.sender,
+              sentAt: m.sentAt,
+            },
+            event: WsEvents.CHAT,
+          }));
 
-        setMsgStack(() => syncedChat);
-      }
-
-      if (msg?.data != null) {
-        setMsgStack((currentState) => [...currentState, msg]);
-      }
+          return [...syncedChat, ...currentState];
+        }
+        return [...currentState, msg];
+      });
     },
     onError: (event) => console.error(event),
     onClose: (_event) => {
@@ -115,13 +115,6 @@ export default function ChatRoom({ params }: RoomParamProp) {
 
                 ws.send(joinMsg);
               }
-
-              const syncMsg = new WsMessage({
-                event: WsEvents.SYNC,
-                data: { roomId: params.id },
-              }).stringify();
-
-              ws.send(syncMsg);
             });
           })
           .catch((error) => {
@@ -184,9 +177,17 @@ export default function ChatRoom({ params }: RoomParamProp) {
   useEffect(() => {
     if (isPartOfRoom && currentRoom != null && ws != null && user != null) {
       setShowUI(true);
+
+      if (ws.readyState === WebSocket.OPEN) {
+        const syncMsg = new WsMessage({
+          event: WsEvents.SYNC,
+          data: { roomId: params.id },
+        }).stringify();
+
+        ws.send(syncMsg);
+      }
     }
   }, [isPartOfRoom, ws, currentRoom, user]);
-
   return (
     <Protected>
       <main className={'flex flex-row h-screen bg-[#110F0F]'}>
