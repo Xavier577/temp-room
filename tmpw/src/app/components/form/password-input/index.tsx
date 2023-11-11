@@ -36,10 +36,10 @@ export const PasswordFormInput = ({
   required = false,
 }: PasswordFormInputProps) => {
   const [hidePassword, setHidePassword] = useState(true);
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <div
-      tabIndex={0}
       className={`
                     flex
                     items-center
@@ -53,7 +53,9 @@ export const PasswordFormInput = ({
                     ${
                       validationErr
                         ? 'border-red-400 hover:border-red-400 focus:border-red-500'
-                        : 'border-[#56644C] hover:border-[#AAE980] focus:border-[#AAE980]'
+                        : isFocused
+                        ? 'border-[#AAE980] hover:border-[#AAE980]'
+                        : 'border-[#56644C] hover:border-[#AAE980]'
                     } 
                     focus:outline-none 
               `}
@@ -78,7 +80,13 @@ export const PasswordFormInput = ({
         type={hidePassword ? 'password' : 'text'}
         value={value}
         onChange={onChange}
-        onFocus={onFocus}
+        onFocus={(e) => {
+          onFocus(e);
+          setIsFocused(true);
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+        }}
         required={required}
       />
 
